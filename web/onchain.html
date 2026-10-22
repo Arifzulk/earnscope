@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,56 +45,56 @@
 <div class="wrap">
   <nav>
     <a href="index.html">&larr; EarnScope</a>
-    <a href="vault.html">Detail Vault</a>
-    <a href="simulator.html">Simulator Deposit</a>
+    <a href="vault.html">Vault Detail</a>
+    <a href="simulator.html">Deposit Simulator</a>
     <a href="rewards.html">Rewards Projector</a>
     <a href="tracker.html">Position Tracker</a>
     <a href="borrow.html">Borrow to Earn</a>
-    <a href="compare.html">Papan Banding</a>
+    <a href="compare.html">Compare Board</a>
     <a href="onchain.html" class="cur">STRIKE on-chain</a>
   </nav>
   <h1>STRIKE on-chain</h1>
-  <p class="sub">Data token STRIKE langsung dari blockchain Cardano via Koios. Angka staking resmi <b>tidak</b> ditampilkan di sini, lihat catatan metodologi di bawah.</p>
+  <p class="sub">STRIKE token data straight from the Cardano blockchain via Koios. Official staking figures are <b>not</b> displayed here; see the methodology note below.</p>
   <div id="err"></div>
 
   <div class="strip" id="strip"></div>
 
   <div class="card">
-    <h2>Tren jumlah holder</h2>
+    <h2>Holder count trend</h2>
     <svg class="trend" id="trend" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
     <div class="cap" id="trendCap"></div>
   </div>
 
   <div class="card">
-    <h2>Konsentrasi top holder</h2>
+    <h2>Top holder concentration</h2>
     <div id="conc"></div>
-    <div class="cap">Persentase kumulatif dari total supply: top 1 alamat, top 5 alamat, top 10 alamat.</div>
+    <div class="cap">Cumulative percentage of total supply: top 1 address, top 5 addresses, top 10 addresses.</div>
   </div>
 
   <div class="card">
-    <h2>Metodologi</h2>
+    <h2>Methodology</h2>
     <div class="meth" id="meth"></div>
     <div class="warn">
-      <b>Catatan wajib soal staking.</b> Total staking resmi TIDAK bisa diturunkan dari data
-      on-chain: liquid staking Strike memakai registry opt-in yang disimpan di server Strike
-      (off-chain), bukan di smart contract yang bisa dibaca publik. Panel ini tidak menampilkan
-      angka "total staking" dalam bentuk apa pun dan tidak mengarangnya.
+      <b>A mandatory note on staking.</b> The official total staked CANNOT be derived from
+      on-chain data: Strike's liquid staking uses an opt-in registry stored on Strike's
+      servers (off-chain), not in a publicly readable smart contract. This panel does not
+      display a "total staking" figure in any form and does not invent one.
     </div>
   </div>
 
   <footer>
-    <div>Snapshot terakhir: <span class="upd" id="upd">n/a</span> &middot; snapshot holder 1x per hari</div>
-    <div style="margin-top:8px">Sumber: Koios (api.koios.rest), tanpa key &middot; Policy STRIKE: f13ac4d6...b5275 &middot; Dibangun untuk Strike 48h Hackathon</div>
+    <div>Latest snapshot: <span class="upd" id="upd">n/a</span> &middot; holder snapshots once a day</div>
+    <div style="margin-top:8px">Source: Koios (api.koios.rest), no API key &middot; STRIKE policy: f13ac4d6...b5275 &middot; Built for the Strike 48h Hackathon</div>
   </footer>
 </div>
 <script>
 const $ = id => document.getElementById(id);
-const fmtInt = n => n == null ? "n/a" : Number(n).toLocaleString("id-ID");
+const fmtInt = n => n == null ? "n/a" : Number(n).toLocaleString("en-US");
 
 function trendSVG(hist){
   const svg = $("trend");
   if (!hist || hist.length < 2){
-    svg.innerHTML = `<text x="12" y="24" fill="#9aa5b4" font-size="13">Belum cukup data tren (butuh minimal 2 snapshot harian).</text>`;
+    svg.innerHTML = `<text x="12" y="24" fill="#9aa5b4" font-size="13">Not enough trend data yet (needs at least 2 daily snapshots).</text>`;
     return;
   }
   const W=600, H=160, P=14;
@@ -121,13 +121,13 @@ async function load(){
     const o = d.onchain || {};
     $("upd").textContent = o.ts_wib || "n/a";
     $("strip").innerHTML = `
-      <div class="stat"><div class="k">Jumlah holder</div><div class="v">${fmtInt(o.holder_count)}</div></div>
+      <div class="stat"><div class="k">Holder count</div><div class="v">${fmtInt(o.holder_count)}</div></div>
       <div class="stat"><div class="k">Supply</div><div class="v">${fmtInt(o.supply_strike)} <span style="font-size:14px;color:#9aa5b4">STRIKE</span></div></div>
-      <div class="stat"><div class="k">Snapshot harian</div><div class="v">${o.snapshot_count ?? "n/a"}</div></div>`;
+      <div class="stat"><div class="k">Daily snapshots</div><div class="v">${o.snapshot_count ?? "n/a"}</div></div>`;
     trendSVG(o.history || []);
     const h = o.history || [];
     $("trendCap").textContent = h.length
-      ? "Dari "+h.length+" snapshot harian ("+new Date(h[0][0]).toLocaleDateString("id-ID",{timeZone:"Asia/Jakarta"})+" s/d "+new Date(h[h.length-1][0]).toLocaleDateString("id-ID",{timeZone:"Asia/Jakarta"})+")."
+      ? "From "+h.length+" daily snapshots ("+new Date(h[0][0]).toLocaleDateString("en-US",{timeZone:"Asia/Jakarta"})+" to "+new Date(h[h.length-1][0]).toLocaleDateString("en-US",{timeZone:"Asia/Jakarta"})+")."
       : "";
     const conc = [
       ["Top 1 holder", o.top1_pct, "#f87171"],
@@ -137,10 +137,10 @@ async function load(){
     $("conc").innerHTML = conc.map(([lbl,v,c])=>`
       <div class="conc"><div class="lbl"><span>${lbl}</span><b>${v==null?"n/a":Number(v).toFixed(2)+"%"}</b></div>
       <div class="bar"><div style="width:${v==null?0:Math.min(100,v).toFixed(2)}%;background:${c}"></div></div></div>`).join("");
-    $("meth").innerHTML = "<b>Sumber:</b> "+(o.source || "Koios (api.koios.rest)")+". "+(o.methodology || "");
+    $("meth").innerHTML = "<b>Source:</b> "+(o.source || "Koios (api.koios.rest)")+". "+(o.methodology || "");
   }catch(err){
     const box=$("err"); box.style.display="block";
-    box.textContent="Gagal memuat data.json: "+err.message;
+    box.textContent="Failed to load data.json: "+err.message;
   }
 }
 load();

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EarnScope: Transparansi Earn Strike Finance</title>
+<title>EarnScope: Strike Finance Earn Transparency</title>
 <style>
   :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
@@ -57,15 +57,15 @@
 <div class="wrap">
   <header>
     <h1>Earn<span class="scope">Scope</span></h1>
-    <p>Hub transparansi independen untuk seluruh menu Earn di Strike Finance, diukur dari data asli, bukan klaim APR.</p>
+    <p>An independent transparency hub for the entire Strike Finance Earn menu, measured from real data, not APR claims.</p>
     <nav>
       <a href="index.html" class="active">Leaderboard</a>
-      <a href="vault.html">Detail Vault</a>
-      <a href="simulator.html">Simulator Deposit</a>
+      <a href="vault.html">Vault Detail</a>
+      <a href="simulator.html">Deposit Simulator</a>
       <a href="rewards.html">Rewards Projector</a>
       <a href="tracker.html">Position Tracker</a>
       <a href="borrow.html">Borrow to Earn</a>
-      <a href="compare.html">Papan Banding</a>
+      <a href="compare.html">Compare Board</a>
       <a href="onchain.html">STRIKE on-chain</a>
     </nav>
   </header>
@@ -74,22 +74,22 @@
   <div class="tblwrap">
   <table>
     <thead><tr>
-      <th>#</th><th>Vault</th><th>Risiko</th>
+      <th>#</th><th>Vault</th><th>Risk</th>
       <th style="text-align:right">Share price</th>
-      <th style="text-align:right">Kinerja vs 1.0</th>
+      <th style="text-align:right">Performance vs 1.0</th>
       <th style="text-align:right">Equity (USD)</th>
-      <th style="text-align:right">Depositor</th>
-      <th style="text-align:right">Komisi</th>
-      <th>Tren</th>
+      <th style="text-align:right">Depositors</th>
+      <th style="text-align:right">Commission</th>
+      <th>Trend</th>
     </tr></thead>
     <tbody id="rows"></tbody>
   </table>
   </div>
-  <div class="events"><h2>Log peristiwa</h2><ul id="evlog"></ul></div>
+  <div class="events"><h2>Event log</h2><ul id="evlog"></ul></div>
   <footer>
-    <div>Terakhir diperbarui: <span class="upd" id="upd">-</span> · auto-refresh tiap 5 menit</div>
+    <div>Last updated: <span class="upd" id="upd">-</span> · auto-refreshes every 5 minutes</div>
     <div id="notes" style="margin-top:8px"></div>
-    <div style="margin-top:8px">Sumber: API publik Strike (api.strikefinance.org), tanpa auth · Dibangun untuk Strike 48h Hackathon</div>
+    <div style="margin-top:8px">Source: Strike public API (api.strikefinance.org), no auth · Built for the Strike 48h Hackathon</div>
   </footer>
 </div>
 <script>
@@ -122,10 +122,10 @@ async function load() {
     document.getElementById("notes").textContent = d.notes || "";
     const e = d.ecosystem;
     document.getElementById("strip").innerHTML = `
-      <div class="stat"><div class="k">Total equity vault</div><div class="v">${fmtUSD(e.total_equity)}</div></div>
-      <div class="stat"><div class="k">Jumlah depositor</div><div class="v">${e.total_depositors}</div></div>
-      <div class="stat"><div class="k">Vault underwater</div><div class="v red">${e.underwater_count} / ${e.vault_count}</div></div>
-      <div class="stat"><div class="k">Vault healthy</div><div class="v green">${e.healthy_count}</div></div>`;
+      <div class="stat"><div class="k">Total vault equity</div><div class="v">${fmtUSD(e.total_equity)}</div></div>
+      <div class="stat"><div class="k">Total depositors</div><div class="v">${e.total_depositors}</div></div>
+      <div class="stat"><div class="k">Underwater vaults</div><div class="v red">${e.underwater_count} / ${e.vault_count}</div></div>
+      <div class="stat"><div class="k">Healthy vaults</div><div class="v green">${e.healthy_count}</div></div>`;
     // Petakan nama vault -> id detail (dipakai link ke vault.html?id=...)
     const idByName = {};
     Object.entries(d.vault_detail || {}).forEach(([vid, det]) => {
@@ -139,7 +139,7 @@ async function load() {
         : `<b>${v.name}</b>`;
       return `
       <tr><td>${i+1}</td>
-        <td>${nameCell}<br><span style="color:#9aa5b4;font-size:12px">${v.type === "protocol" ? "Vault resmi Strike" : "Vault pengguna"} · lockup ${v.lockup_days} hari · min $${v.min_deposit}</span></td>
+        <td>${nameCell}<br><span style="color:#9aa5b4;font-size:12px">${v.type === "protocol" ? "Official Strike vault" : "User vault"} · lockup ${v.lockup_days} days · min $${v.min_deposit}</span></td>
         <td>${badge(v.risk_label, v.type)}</td>
         <td class="num">${v.share_price == null ? "-" : v.share_price.toFixed(6)}</td>
         <td class="num ${pctCls(v.perf_vs_1_pct)}">${fmtPct(v.perf_vs_1_pct)}</td>
@@ -151,11 +151,11 @@ async function load() {
     const ev = (d.events || []).slice(0, 8);
     document.getElementById("evlog").innerHTML = ev.length
       ? ev.map(x => `<li><b>${x.kind}</b> - ${x.detail}</li>`).join("")
-      : "<li>Belum ada peristiwa tercatat.</li>";
+      : "<li>No events recorded yet.</li>";
   } catch (err) {
     const box = document.getElementById("err");
     box.style.display = "block";
-    box.textContent = "Gagal memuat data.json: " + err.message;
+    box.textContent = "Failed to load data.json: " + err.message;
   }
 }
 load();

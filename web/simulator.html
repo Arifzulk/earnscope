@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulator Deposit - EarnScope</title>
+<title>Deposit Simulator - EarnScope</title>
 <style>
   :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
@@ -48,48 +48,49 @@
 <div class="wrap">
   <nav>
     <a href="index.html">EarnScope</a>
-    <a href="vault.html">Detail Vault</a>
-    <a href="simulator.html" class="active">Simulator Deposit</a>
+    <a href="vault.html">Vault Detail</a>
+    <a href="simulator.html" class="active">Deposit Simulator</a>
     <a href="rewards.html">Rewards Projector</a>
     <a href="tracker.html">Position Tracker</a>
     <a href="borrow.html">Borrow to Earn</a>
-    <a href="compare.html">Papan Banding</a>
+    <a href="compare.html">Compare Board</a>
     <a href="onchain.html">STRIKE on-chain</a>
   </nav>
   <header>
-    <h1>Simulator <span class="scope">Deposit</span></h1>
-    <p>Bagaimana jadinya jika kamu deposit ke sebuah vault pada suatu titik dalam data kami? Dihitung dari share price historis asli.</p>
+    <h1>Deposit <span class="scope">Simulator</span></h1>
+    <p>What would have happened if you had deposited into a vault at a point in our data? Computed from real historical share prices.</p>
   </header>
   <div id="err"></div>
   <div class="panel">
-    <h2>Input simulasi</h2>
+    <h2>Simulation inputs</h2>
     <label for="vault">Vault</label>
     <select id="vault"></select>
-    <label for="nominal">Nominal deposit (USD)</label>
+    <label for="nominal">Deposit amount (USD)</label>
     <input type="number" id="nominal" value="1000" min="1" step="any">
-    <label>Jangka waktu (mundur dari data terbaru)</label>
+    <label>Time window (looking back from the latest data)</label>
     <div class="dur" id="dur"></div>
     <div class="rangeinfo" id="rangeinfo"></div>
   </div>
   <div class="panel">
-    <h2>Hasil simulasi historis</h2>
+    <h2>Historical simulation result</h2>
     <div class="res" id="res"></div>
   </div>
   <div class="panel">
-    <h2>Pertumbuhan nilai deposit</h2>
+    <h2>Deposit value growth</h2>
     <canvas id="chart" width="860" height="260"></canvas>
   </div>
   <div class="disc">
-    <b>Disclaimer:</b> hasil di atas murni rekonstruksi dari data share price masa lalu
-    dan BUKAN janji hasil di masa depan. Komisi leader dipotong dari profit sesuai
-    besaran resmi vault (hanya bila ada profit). Kinerja masa lalu tidak menjamin kinerja berikutnya.
+    <b>Disclaimer:</b> the results above are purely a reconstruction from past share price
+    data and are NOT a promise of future returns. The leader commission is deducted from
+    profit at the vault's official rate (only when there is a profit). Past performance
+    does not guarantee future results.
   </div>
-  <footer>Sumber: API publik Strike (api.strikefinance.org), tanpa auth · Dibangun untuk Strike 48h Hackathon</footer>
+  <footer>Source: Strike public API (api.strikefinance.org), no auth · Built for the Strike 48h Hackathon</footer>
 </div>
 <script>
 const fmtUSD = n => n == null || isNaN(n) ? "?" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
 const fmtPct = n => n == null || isNaN(n) ? "?" : (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
-const fmtWIB = ms => new Date(ms).toLocaleString("id-ID",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+const fmtWIB = ms => new Date(ms).toLocaleString("en-US",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
 let SIM = null;
 
 function compute(vid, nominal, durHours) {
@@ -142,15 +143,15 @@ function render() {
   const g = compute(vid, nominal, dur);
   const cls = g.net >= nominal ? "pos" : "neg";
   document.getElementById("res").innerHTML = `
-    <div class="stat"><div class="k">Nilai akhir</div><div class="v ${cls}">${fmtUSD(g.net)}</div></div>
-    <div class="stat"><div class="k">Return bersih</div><div class="v ${cls}">${fmtPct(g.ret)}</div></div>
-    <div class="stat"><div class="k">Profit kotor</div><div class="v ${g.gross>=0?"pos":"neg"}">${fmtUSD(g.gross)}</div></div>
-    <div class="stat"><div class="k">Komisi leader (${(g.bps/100).toFixed(g.bps%100?2:0)}%)</div><div class="v">${fmtUSD(g.comm)}</div></div>
-    <div class="stat"><div class="k">Share price awal</div><div class="v">${g.sp0.toFixed(6)}</div></div>
-    <div class="stat"><div class="k">Share price akhir</div><div class="v">${g.sp1.toFixed(6)}</div></div>`;
+    <div class="stat"><div class="k">Final value</div><div class="v ${cls}">${fmtUSD(g.net)}</div></div>
+    <div class="stat"><div class="k">Net return</div><div class="v ${cls}">${fmtPct(g.ret)}</div></div>
+    <div class="stat"><div class="k">Gross profit</div><div class="v ${g.gross>=0?"pos":"neg"}">${fmtUSD(g.gross)}</div></div>
+    <div class="stat"><div class="k">Leader commission (${(g.bps/100).toFixed(g.bps%100?2:0)}%)</div><div class="v">${fmtUSD(g.comm)}</div></div>
+    <div class="stat"><div class="k">Starting share price</div><div class="v">${g.sp0.toFixed(6)}</div></div>
+    <div class="stat"><div class="k">Ending share price</div><div class="v">${g.sp1.toFixed(6)}</div></div>`;
   document.getElementById("rangeinfo").textContent =
-    "Rentang data: " + fmtWIB(g.v.series[0][0]) + " s/d " + fmtWIB(g.v.series[g.v.series.length-1][0]) +
-    " (" + g.v.point_count + " titik). Simulasi mulai " + fmtWIB(g.v.series[g.i0][0]) + ".";
+    "Data range: " + fmtWIB(g.v.series[0][0]) + " to " + fmtWIB(g.v.series[g.v.series.length-1][0]) +
+    " (" + g.v.point_count + " points). Simulation starts " + fmtWIB(g.v.series[g.i0][0]) + ".";
   draw(g, nominal);
 }
 
@@ -158,12 +159,12 @@ async function init() {
   try {
     const d = await (await fetch("data.json",{cache:"no-store"})).json();
     if (!d.simulator || !d.simulator.vaults || !Object.keys(d.simulator.vaults).length)
-      throw new Error("bagian simulator belum tersedia di data.json");
+      throw new Error("the simulator section is not available in data.json yet");
     SIM = d.simulator;
   } catch(e) {
     const el = document.getElementById("err");
     el.style.display = "block";
-    el.textContent = "Gagal memuat data: " + e.message;
+    el.textContent = "Failed to load data: " + e.message;
     return;
   }
   const sel = document.getElementById("vault");
@@ -176,7 +177,7 @@ async function init() {
   dur.innerHTML = "";
   opts.forEach((h,i) => {
     const b = document.createElement("button");
-    b.textContent = h >= spanH ? "Semua data (" + h + " jam)" : h + " jam";
+    b.textContent = h >= spanH ? "All data (" + h + " hours)" : h + " hours";
     b.dataset.h = h;
     if (i === opts.length-1) b.classList.add("active");
     b.onclick = () => { dur.querySelectorAll("button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); render(); };

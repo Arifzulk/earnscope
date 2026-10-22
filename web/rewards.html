@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -52,42 +52,42 @@
 <div class="wrap">
   <nav>
     <a href="index.html">EarnScope</a>
-    <a href="vault.html">Detail Vault</a>
-    <a href="simulator.html">Simulator Deposit</a>
+    <a href="vault.html">Vault Detail</a>
+    <a href="simulator.html">Deposit Simulator</a>
     <a href="rewards.html" class="active">Rewards Projector</a>
     <a href="tracker.html">Position Tracker</a>
     <a href="borrow.html">Borrow to Earn</a>
-    <a href="compare.html">Papan Banding</a>
+    <a href="compare.html">Compare Board</a>
     <a href="onchain.html">STRIKE on-chain</a>
   </nav>
   <header>
-    <h1>Rewards <span class="scope">Projector</span> <span class="est">ESTIMASI</span></h1>
-    <p>Proyeksi Strike Rewards / Points Season 1 untuk para depositor Strike Liquidity Provider (SLP), direkonstruksi dari data publik.</p>
+    <h1>Rewards <span class="scope">Projector</span> <span class="est">ESTIMATE</span></h1>
+    <p>Projected Strike Rewards / Points Season 1 for Strike Liquidity Provider (SLP) depositors, reconstructed from public data.</p>
   </header>
   <div id="err"></div>
   <div class="countdown">
     <div class="t" id="cd">--:--:--:--</div>
-    <div class="l" id="cdlabel">Menghitung mundur ke akhir Season 1</div>
+    <div class="l" id="cdlabel">Counting down to the end of Season 1</div>
   </div>
   <div class="strip" id="strip"></div>
   <div class="per1k">
-    <h2>Angka per $1.000 deposit <span class="est">ESTIMASI</span></h2>
+    <h2>Figures per $1,000 deposit <span class="est">ESTIMATE</span></h2>
     <div class="strip" id="per1k" style="margin-bottom:0"></div>
   </div>
   <div class="tblwrap">
     <table>
       <thead><tr>
         <th>#</th><th>Depositor</th>
-        <th style="text-align:right">Ekuitas (USD)</th>
+        <th style="text-align:right">Equity (USD)</th>
         <th style="text-align:right">Share</th>
-        <th style="text-align:right">Est. poin (sisa season)</th>
+        <th style="text-align:right">Est. points (rest of season)</th>
         <th style="text-align:right">Est. STRIKE</th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
   <div class="meth" id="meth"></div>
-  <footer>Sumber: API publik Strike (api.strikefinance.org), tanpa auth · Dibangun untuk Strike 48h Hackathon</footer>
+  <footer>Source: Strike public API (api.strikefinance.org), no auth · Built for the Strike 48h Hackathon</footer>
 </div>
 <script>
 const fmtUSD = n => "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
@@ -99,42 +99,42 @@ function tick() {
   const left = RW.season_end_ms - now;
   const el = document.getElementById("cd"), lb = document.getElementById("cdlabel");
   if (left <= 0) {
-    el.textContent = "SELESAI";
-    lb.textContent = "Season 1 telah berakhir (" + RW.season_end_label + ")";
+    el.textContent = "ENDED";
+    lb.textContent = "Season 1 has ended (" + RW.season_end_label + ")";
     return;
   }
   const d = Math.floor(left/86400000), h = Math.floor(left%86400000/3600000),
         m = Math.floor(left%3600000/60000), s = Math.floor(left%60000/1000);
-  el.textContent = d + " hari " + String(h).padStart(2,"0") + ":" +
+  el.textContent = d + " days " + String(h).padStart(2,"0") + ":" +
                    String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
-  lb.textContent = "Menghitung mundur ke akhir Season 1: " + RW.season_end_label;
+  lb.textContent = "Counting down to the end of Season 1: " + RW.season_end_label;
 }
 
 async function init() {
   try {
     const d = await (await fetch("data.json",{cache:"no-store"})).json();
-    if (!d.rewards || !d.rewards.slp_depositors) throw new Error("bagian rewards belum tersedia di data.json");
+    if (!d.rewards || !d.rewards.slp_depositors) throw new Error("the rewards section is not available in data.json yet");
     RW = d.rewards;
   } catch(e) {
     const el = document.getElementById("err");
     el.style.display = "block";
-    el.textContent = "Gagal memuat data: " + e.message;
+    el.textContent = "Failed to load data: " + e.message;
     return;
   }
   const daysLeft = Math.max(0, (RW.season_end_ms - Date.now()) / 86400000);
   const total = RW.slp_total_equity || 1;
   const est = eq => RW.points_per_day * daysLeft * eq / total;
   document.getElementById("strip").innerHTML = `
-    <div class="stat"><div class="k">Poin per hari</div><div class="v">${RW.points_per_day}</div></div>
-    <div class="stat"><div class="k">Pool hadiah</div><div class="v">${RW.pool_strike.toLocaleString("en-US")} STRIKE</div></div>
-    <div class="stat"><div class="k">Konversi</div><div class="v">~${RW.strike_per_point} <span style="font-size:13px;color:#9aa5b4">STRIKE/poin</span></div></div>
-    <div class="stat"><div class="k">Total ekuitas SLP</div><div class="v">${fmtUSD(total)}</div></div>
-    <div class="stat"><div class="k">Depositor SLP</div><div class="v">${RW.slp_depositor_count}</div></div>`;
+    <div class="stat"><div class="k">Points per day</div><div class="v">${RW.points_per_day}</div></div>
+    <div class="stat"><div class="k">Reward pool</div><div class="v">${RW.pool_strike.toLocaleString("en-US")} STRIKE</div></div>
+    <div class="stat"><div class="k">Conversion</div><div class="v">~${RW.strike_per_point} <span style="font-size:13px;color:#9aa5b4">STRIKE/point</span></div></div>
+    <div class="stat"><div class="k">Total SLP equity</div><div class="v">${fmtUSD(total)}</div></div>
+    <div class="stat"><div class="k">SLP depositors</div><div class="v">${RW.slp_depositor_count}</div></div>`;
   const p1k = est(1000);
   document.getElementById("per1k").innerHTML = `
-    <div class="stat"><div class="k">Est. poin / $1.000</div><div class="v">${p1k.toFixed(2)}</div></div>
-    <div class="stat"><div class="k">Est. STRIKE / $1.000</div><div class="v">${(p1k*RW.strike_per_point).toFixed(2)}</div></div>
-    <div class="stat"><div class="k">Sisa hari season</div><div class="v">${daysLeft.toFixed(1)}</div></div>`;
+    <div class="stat"><div class="k">Est. points / $1,000</div><div class="v">${p1k.toFixed(2)}</div></div>
+    <div class="stat"><div class="k">Est. STRIKE / $1,000</div><div class="v">${(p1k*RW.strike_per_point).toFixed(2)}</div></div>
+    <div class="stat"><div class="k">Days left in season</div><div class="v">${daysLeft.toFixed(1)}</div></div>`;
   const deps = RW.slp_depositors.slice(0, 50);
   document.getElementById("rows").innerHTML = deps.map((x,i) => {
     const p = est(x.current_equity);
@@ -145,7 +145,7 @@ async function init() {
       <td class="num">${p.toFixed(2)}</td>
       <td class="num">${(p*RW.strike_per_point).toFixed(2)}</td></tr>`;
   }).join("");
-  document.getElementById("meth").innerHTML = "<b>Catatan metodologi:</b> " + RW.methodology_note;
+  document.getElementById("meth").innerHTML = "<b>Methodology note:</b> " + RW.methodology_note;
   tick();
   setInterval(tick, 1000);
 }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EarnScope - Detail Vault</title>
+<title>EarnScope - Vault Detail</title>
 <style>
   :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
@@ -60,7 +60,7 @@
 </head>
 <body>
 <div class="wrap">
-  <a class="back" href="index.html">&larr; Kembali ke leaderboard</a>
+  <a class="back" href="index.html">&larr; Back to leaderboard</a>
   <div id="err"></div>
   <div id="content" style="display:none">
     <header>
@@ -71,32 +71,32 @@
     <div class="strip" id="cards"></div>
 
     <div class="card">
-      <h2>Grafik share price</h2>
-      <div class="hint">Biru: history resmi Strike (sejak inception) &middot; Hijau: snapshot live EarnScope (tiap &plusmn;5 menit)</div>
+      <h2>Share price chart</h2>
+      <div class="hint">Blue: Strike official history (since inception) &middot; Green: EarnScope live snapshots (every &plusmn;5 minutes)</div>
       <div class="toolbar" id="rangebar">
-        <button data-range="all" class="on">Semua</button>
-        <button data-range="30">30 hari</button>
-        <button data-range="7">7 hari</button>
+        <button data-range="all" class="on">All</button>
+        <button data-range="30">30 days</button>
+        <button data-range="7">7 days</button>
         <span style="width:12px"></span>
         <button data-metric="sp" class="on">Share price</button>
         <button data-metric="tvl">TVL (USD)</button>
       </div>
       <div class="legend">
-        <span><span class="sw" style="background:#60a5fa"></span>History resmi Strike</span>
-        <span><span class="sw" style="background:#34d399"></span>Snapshot EarnScope (live)</span>
+        <span><span class="sw" style="background:#60a5fa"></span>Strike official history</span>
+        <span><span class="sw" style="background:#34d399"></span>EarnScope snapshot (live)</span>
       </div>
       <div id="mainchart"></div>
     </div>
 
     <div class="grid2">
       <div class="card">
-        <h2>Ringkasan portfolio (resmi)</h2>
+        <h2>Portfolio summary (official)</h2>
         <div class="hint" id="port-ts"></div>
         <table><tbody id="port"></tbody></table>
       </div>
       <div class="card">
-        <h2>Tren jumlah depositor</h2>
-        <div class="hint">Dari snapshot API depositors tiap siklus collector</div>
+        <h2>Depositor count trend</h2>
+        <div class="hint">From depositors API snapshots on every collector cycle</div>
         <div id="depchart"></div>
       </div>
     </div>
@@ -104,11 +104,11 @@
     <footer>
       <div>Data: <span class="upd" id="upd">-</span></div>
       <div id="note" style="margin-top:8px"></div>
-      <div style="margin-top:8px">Label risiko: Healthy bila share price &ge; 1,0, Underwater bila &lt; 1,0. Bukan saran investasi; angka dihitung dari data publik apa adanya.</div>
+      <div style="margin-top:8px">Risk labels: Healthy when share price &ge; 1.0, Underwater when &lt; 1.0. Not investment advice; figures are computed from public data as-is.</div>
     </footer>
   </div>
   <div id="picker" class="card" style="display:none">
-    <h2>Pilih vault</h2>
+    <h2>Select a vault</h2>
     <div class="vlist" id="vlist"></div>
   </div>
 </div>
@@ -119,13 +119,13 @@ const fmtUSD = n => (n == null || isNaN(n)) ? "-" : "$" + Number(n).toLocaleStri
 const fmtNum = (n,d=2) => (n == null || isNaN(n)) ? "-" : Number(n).toLocaleString("en-US",{maximumFractionDigits:d});
 const fmtPct = n => (n == null || isNaN(n)) ? "-" : (n >= 0 ? "+" : "") + Number(n).toFixed(2) + "%";
 const pctCls = n => (n == null || isNaN(n)) ? "" : (n >= 0 ? "pos" : "neg");
-const fmtDate = ts => new Date(ts).toLocaleDateString("id-ID",{day:"numeric",month:"short",timeZone:"Asia/Jakarta"});
-const fmtDateTime = ts => new Date(ts).toLocaleString("id-ID",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"});
+const fmtDate = ts => new Date(ts).toLocaleDateString("en-US",{day:"numeric",month:"short",timeZone:"Asia/Jakarta"});
+const fmtDateTime = ts => new Date(ts).toLocaleString("en-US",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"});
 
 function lineChart(seriesList, yLabel) {
   const W = 640, H = 300, padL = 64, padR = 12, padT = 10, padB = 28;
   const all = seriesList.flatMap(s => s.pts);
-  if (!all.length) return "<p style='color:#9aa5b4'>Belum ada data.</p>";
+  if (!all.length) return "<p style='color:#9aa5b4'>No data yet.</p>";
   let t0 = Math.min(...all.map(p=>p[0])), t1 = Math.max(...all.map(p=>p[0]));
   let v0 = Math.min(...all.map(p=>p[1])), v1 = Math.max(...all.map(p=>p[1]));
   if (t1 === t0) t1 = t0 + 1;
@@ -174,40 +174,40 @@ function renderMain() {
 
 function render() {
   const m = META;
-  document.title = "EarnScope - " + (m.name || "Detail Vault");
+  document.title = "EarnScope - " + (m.name || "Vault Detail");
   $("vname").textContent = m.name || "-";
   const badgeCls = m.risk_label === "Underwater" ? "underwater" : "healthy";
   const proto = m.type === "protocol" ? ' <span class="badge proto">Protocol</span>' : "";
   $("vbadges").innerHTML = `<span class="badge ${badgeCls}">${m.risk_label}</span>${proto}`;
-  const leader = m.nickname ? m.nickname : (m.type === "protocol" ? "Strike (resmi)" : m.leader_account_id || "-");
-  $("vsub").textContent = `Leader: ${leader} · Sejak inception: ${fmtDate((VD.portfolio||{}).created_at) }`;
+  const leader = m.nickname ? m.nickname : (m.type === "protocol" ? "Strike (official)" : m.leader_account_id || "-");
+  $("vsub").textContent = `Leader: ${leader} · Since inception: ${fmtDate((VD.portfolio||{}).created_at) }`;
   const com = m.leader_commission_pct == null ? "-" : m.leader_commission_pct.toFixed(m.leader_commission_bps % 100 ? 2 : 0) + "%";
   const sp = m.share_price;
   $("cards").innerHTML = `
     <div class="stat"><div class="k">Share price</div><div class="v ${sp != null && sp < 1 ? "red" : "green"}">${sp == null ? "-" : sp.toFixed(6)}</div></div>
     <div class="stat"><div class="k">Equity</div><div class="v">${fmtUSD(m.equity)}</div></div>
-    <div class="stat"><div class="k">Depositor</div><div class="v">${m.depositors == null ? "-" : m.depositors}</div></div>
-    <div class="stat"><div class="k">Komisi leader</div><div class="v">${com}</div></div>
-    <div class="stat"><div class="k">Lockup</div><div class="v">${m.lockup_days == null ? "-" : m.lockup_days + " hari"}</div></div>
-    <div class="stat"><div class="k">Min deposit</div><div class="v">$${m.min_deposit == null ? "-" : m.min_deposit}</div></div>`;
+    <div class="stat"><div class="k">Depositors</div><div class="v">${m.depositors == null ? "-" : m.depositors}</div></div>
+    <div class="stat"><div class="k">Leader commission</div><div class="v">${com}</div></div>
+    <div class="stat"><div class="k">Lockup</div><div class="v">${m.lockup_days == null ? "-" : m.lockup_days + " days"}</div></div>
+    <div class="stat"><div class="k">Min. deposit</div><div class="v">$${m.min_deposit == null ? "-" : m.min_deposit}</div></div>`;
   renderMain();
   $("depchart").innerHTML = lineChart([{pts: DEPT, color: "#fbbf24"}], "n");
 
   const p = VD.portfolio || {};
-  $("port-ts").textContent = p.fetched_at_ms ? ("Diambil " + fmtDateTime(p.fetched_at_ms) + " WIB") : "";
+  $("port-ts").textContent = p.fetched_at_ms ? ("Fetched " + fmtDateTime(p.fetched_at_ms) + " WIB") : "";
   const rows = [
     ["Total value locked", fmtUSD(p.total_value_locked)],
-    ["Total deposit (sepanjang waktu)", fmtUSD(p.all_time_deposits)],
-    ["Total withdraw (sepanjang waktu)", fmtUSD(p.all_time_withdrawals)],
-    ["PnL (sepanjang waktu)", `<span class="${pctCls(p.all_time_pnl >= 0 ? 1 : -1)}">${fmtUSD(p.all_time_pnl)}</span>`],
-    ["Return 24 jam", `<span class="${pctCls(p.return_24h)}">${fmtPct(p.return_24h)}</span>`],
-    ["Return periode", `<span class="${pctCls(p.period_return)}">${fmtPct(p.period_return)}</span>`],
-    ["APR (resmi)", `<span class="${pctCls(p.apr)}">${fmtPct(p.apr)}</span>`],
-    ["Fee diterima leader", fmtUSD(p.fee_earned)],
+    ["Total deposits (all time)", fmtUSD(p.all_time_deposits)],
+    ["Total withdrawals (all time)", fmtUSD(p.all_time_withdrawals)],
+    ["PnL (all time)", `<span class="${pctCls(p.all_time_pnl >= 0 ? 1 : -1)}">${fmtUSD(p.all_time_pnl)}</span>`],
+    ["24h return", `<span class="${pctCls(p.return_24h)}">${fmtPct(p.return_24h)}</span>`],
+    ["Period return", `<span class="${pctCls(p.period_return)}">${fmtPct(p.period_return)}</span>`],
+    ["APR (official)", `<span class="${pctCls(p.apr)}">${fmtPct(p.apr)}</span>`],
+    ["Fees earned by leader", fmtUSD(p.fee_earned)],
     ["Sharpe ratio", p.sharpe_ratio == null ? "-" : String(p.sharpe_ratio)],
     ["Max drawdown", p.max_drawdown == null ? "-" : String(p.max_drawdown) + "%"],
-    ["Volume perdagangan", fmtUSD(p.volume)],
-    ["Catatan", "Rincian posisi per pasar tidak dibuka API publik"],
+    ["Trading volume", fmtUSD(p.volume)],
+    ["Note", "Per-market position details are not exposed by the public API"],
   ];
   $("port").innerHTML = rows.map(r => `<tr><th>${r[0]}</th><td class="num">${r[1]}</td></tr>`).join("");
   $("upd").textContent = DATA.generated_at_wib || "-";
@@ -224,7 +224,7 @@ async function load() {
     const detail = DATA.vault_detail || {};
     if (!id || !detail[id]) {
       const ids = Object.keys(detail);
-      if (!ids.length) throw new Error("vault_detail belum tersedia di data.json; tunggu siklus collector berikutnya.");
+      if (!ids.length) throw new Error("vault_detail is not available in data.json yet; wait for the next collector cycle.");
       $("picker").style.display = "block";
       $("vlist").innerHTML = ids.map(vid => {
         const m = (detail[vid] || {}).meta || {};
@@ -249,7 +249,7 @@ async function load() {
   } catch (err) {
     const box = $("err");
     box.style.display = "block";
-    box.textContent = "Gagal memuat data: " + err.message;
+    box.textContent = "Failed to load data: " + err.message;
   }
 }
 load();

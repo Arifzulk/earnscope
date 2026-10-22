@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -53,41 +53,42 @@
 <div class="wrap">
   <nav>
     <a href="index.html">EarnScope</a>
-    <a href="vault.html">Detail Vault</a>
-    <a href="simulator.html">Simulator Deposit</a>
+    <a href="vault.html">Vault Detail</a>
+    <a href="simulator.html">Deposit Simulator</a>
     <a href="rewards.html">Rewards Projector</a>
     <a href="tracker.html" class="active">Position Tracker</a>
     <a href="borrow.html">Borrow to Earn</a>
-    <a href="compare.html">Papan Banding</a>
+    <a href="compare.html">Compare Board</a>
     <a href="onchain.html">STRIKE on-chain</a>
   </nav>
   <header>
     <h1>Position <span class="scope">Tracker</span></h1>
-    <p>Tempel alamat Cardano kamu untuk melihat posisimu di semua vault Strike. Tanpa login, tanpa kunci, murni dari data publik.</p>
+    <p>Paste your Cardano address to see your positions across all Strike vaults. No login, no keys, purely from public data.</p>
   </header>
   <div id="err"></div>
   <div class="panel">
-    <h2>Alamat Cardano</h2>
+    <h2>Cardano address</h2>
     <div class="row">
       <input type="text" id="addr" placeholder="addr1..." autocomplete="off" spellcheck="false">
-      <button class="go" id="go">Lacak</button>
+      <button class="go" id="go">Track</button>
     </div>
-    <div class="hint">Alamat dinormalisasi otomatis (spasi dibuang, huruf kecil). Gunakan alamat pembayaran (addr1...), bukan alamat stake (stake1...).</div>
+    <div class="hint">The address is normalized automatically (whitespace stripped, lowercased). Use a payment address (addr1...), not a stake address (stake1...).</div>
   </div>
   <div id="out"></div>
   <div class="lim">
-    <b>Batasan apa adanya:</b> data posisi berasal dari snapshot depositors publik Strike
-    (diperbarui tiap jam oleh EarnScope). Line Borrow to Earn per akun dan status staking
-    resmi TIDAK bisa dilacak publik karena berada di balik autentikasi Strike. Saldo STRIKE
-    on-chain diambil langsung dari Koios dan bisa gagal dimuat bila jaringan Koios lambat.
+    <b>Honest limitations:</b> position data comes from Strike's public depositors
+    snapshots (refreshed hourly by EarnScope). Per-account Borrow to Earn lines and official
+    staking status CANNOT be tracked publicly because they sit behind Strike authentication.
+    The on-chain STRIKE balance is fetched directly from Koios and may fail to load when the
+    Koios network is slow.
   </div>
-  <footer>Sumber: API publik Strike (api.strikefinance.org) + Koios (api.koios.rest) · Dibangun untuk Strike 48h Hackathon</footer>
+  <footer>Source: Strike public API (api.strikefinance.org) + Koios (api.koios.rest) · Built for the Strike 48h Hackathon</footer>
 </div>
 <script>
 const STRIKE_POLICY = "f13ac4d66b3ee19a6aa0f2a22298737bd907cc95121662fc971b5275";
 const STRIKE_NAME_HEX = "535452494b45"; // "STRIKE"
 const fmtUSD = n => n == null || isNaN(n) ? "?" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
-const fmtDate = ms => ms ? new Date(ms).toLocaleString("id-ID",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",year:"numeric"}) : "?";
+const fmtDate = ms => ms ? new Date(ms).toLocaleString("en-US",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",year:"numeric"}) : "?";
 let DATA = null;
 
 function normAddr(s) { return (s || "").trim().toLowerCase(); }
@@ -100,7 +101,7 @@ function render(addr) {
     if (hit) found.push({ vid, v, d: hit });
   });
   if (!found.length) {
-    out.innerHTML = '<div class="panel"><div class="none">Alamat tidak ditemukan di data depositors publik vault mana pun. Pastikan alamatnya benar (format addr1...) dan vault-nya memang punya posisi deposit.</div></div>';
+    out.innerHTML = '<div class="panel"><div class="none">Address not found in any vault\'s public depositors data. Make sure the address is correct (addr1... format) and that a vault actually holds a deposit position for it.</div></div>';
     return;
   }
   let html = "";
@@ -109,10 +110,10 @@ function render(addr) {
     html += `<div class="vcard"><h3>${v.name}</h3><div class="grid">
       <div class="stat"><div class="k">Total deposit</div><div class="v">${fmtUSD(d.total_deposited)}</div></div>
       <div class="stat"><div class="k">Total withdraw</div><div class="v">${fmtUSD(d.total_withdrawn)}</div></div>
-      <div class="stat"><div class="k">Ekuitas saat ini</div><div class="v">${fmtUSD(d.current_equity)}</div></div>
+      <div class="stat"><div class="k">Current equity</div><div class="v">${fmtUSD(d.current_equity)}</div></div>
       <div class="stat"><div class="k">PnL</div><div class="v ${pnlCls}">${fmtUSD(d.pnl)}</div></div>
-      <div class="stat"><div class="k">Share vault</div><div class="v">${d.share_pct.toFixed(4)}%</div></div>
-      <div class="stat"><div class="k">Depositor sejak</div><div class="v">${fmtDate(d.deposited_since_ms)}</div></div>
+      <div class="stat"><div class="k">Vault share</div><div class="v">${d.share_pct.toFixed(4)}%</div></div>
+      <div class="stat"><div class="k">Depositor since</div><div class="v">${fmtDate(d.deposited_since_ms)}</div></div>
     </div></div>`;
   });
   const slp = found.find(f => f.vid === DATA.rewards.slp_vault_id);
@@ -120,15 +121,15 @@ function render(addr) {
     const daysLeft = Math.max(0, (DATA.rewards.season_end_ms - Date.now()) / 86400000);
     const total = DATA.rewards.slp_total_equity || 1;
     const pts = DATA.rewards.points_per_day * daysLeft * slp.d.current_equity / total;
-    html += `<div class="vcard"><h3>Proyeksi rewards pribadimu (SLP) <span class="est">ESTIMASI</span></h3>
+    html += `<div class="vcard"><h3>Your personal rewards projection (SLP) <span class="est">ESTIMATE</span></h3>
       <div class="grid">
-        <div class="stat"><div class="k">Est. poin (sisa season)</div><div class="v">${pts.toFixed(2)}</div></div>
+        <div class="stat"><div class="k">Est. points (rest of season)</div><div class="v">${pts.toFixed(2)}</div></div>
         <div class="stat"><div class="k">Est. STRIKE</div><div class="v">${(pts*DATA.rewards.strike_per_point).toFixed(2)}</div></div>
       </div>
-      <div class="hint">Dihitung pro-rata dari ekuitasmu saat ini terhadap total ekuitas SLP. Lihat catatan metodologi di halaman Rewards Projector.</div>
+      <div class="hint">Computed pro-rata from your current equity against total SLP equity. See the methodology note on the Rewards Projector page.</div>
     </div>`;
   }
-  html += `<div class="vcard koios"><h3>Saldo STRIKE on-chain (via Koios)</h3><div id="koiosres">Memuat dari api.koios.rest ...</div></div>`;
+  html += `<div class="vcard koios"><h3>On-chain STRIKE balance (via Koios)</h3><div id="koiosres">Loading from api.koios.rest ...</div></div>`;
   out.innerHTML = html;
   loadKoios(addr);
 }
@@ -152,23 +153,23 @@ async function loadKoios(addr) {
     const strike = assets.find(a => a.policy_id === STRIKE_POLICY && a.asset_name === STRIKE_NAME_HEX);
     const qty = strike ? Number(strike.quantity) : 0;
     el.innerHTML = qty > 0
-      ? "Saldo STRIKE: <b>" + qty.toLocaleString("en-US") + "</b> unit (satuan terkecil; jumlah desimal token belum terverifikasi)."
-      : "Alamat ini tidak memegang token STRIKE (atau saldo 0).";
+      ? "STRIKE balance: <b>" + qty.toLocaleString("en-US") + "</b> units (smallest unit; the token's decimal count is not yet verified)."
+      : "This address does not hold STRIKE tokens (or the balance is 0).";
   } catch(e) {
-    el.textContent = "Tidak bisa memuat saldo STRIKE saat ini (" + (e.name === "AbortError" ? "timeout" : e.message) + "). Coba lagi nanti, data posisi vault di atas tidak terpengaruh.";
+    el.textContent = "Could not load the STRIKE balance right now (" + (e.name === "AbortError" ? "timeout" : e.message) + "). Try again later; the vault position data above is unaffected.";
   }
 }
 
 async function init() {
   try {
     const d = await (await fetch("data.json",{cache:"no-store"})).json();
-    if (!d.tracker || !d.tracker.vaults) throw new Error("bagian tracker belum tersedia di data.json");
-    if (!d.rewards) throw new Error("bagian rewards belum tersedia di data.json");
+    if (!d.tracker || !d.tracker.vaults) throw new Error("the tracker section is not available in data.json yet");
+    if (!d.rewards) throw new Error("the rewards section is not available in data.json yet");
     DATA = d;
   } catch(e) {
     const el = document.getElementById("err");
     el.style.display = "block";
-    el.textContent = "Gagal memuat data: " + e.message;
+    el.textContent = "Failed to load data: " + e.message;
     return;
   }
   const run = () => {
