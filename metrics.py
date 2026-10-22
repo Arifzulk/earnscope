@@ -71,15 +71,15 @@ def detect_events(conn, vault_id, prev_sp, cur_sp, is_new_vault):
     now = int(time.time() * 1000)
     out = []
     if is_new_vault:
-        out.append(("vault_baru", vault_id, "Vault baru terdeteksi pertama kali"))
+        out.append(("new_vault", vault_id, "New vault detected for the first time"))
     p, c = _f(prev_sp), _f(cur_sp)
     if p is not None and c is not None:
         if p < 1.0 <= c:
             out.append(("sp_cross_up", vault_id,
-                        f"Share price menembus 1.0 ke atas ({p:.6f} -> {c:.6f})"))
+                        f"Share price crossed above 1.0 ({p:.6f} -> {c:.6f})"))
         elif p >= 1.0 > c:
             out.append(("sp_cross_down", vault_id,
-                        f"Share price jatuh di bawah 1.0 ({p:.6f} -> {c:.6f})"))
+                        f"Share price fell below 1.0 ({p:.6f} -> {c:.6f})"))
     for kind, vid, detail in out:
         conn.execute("INSERT INTO events (ts, kind, vault_id, detail) VALUES (?,?,?,?)",
                      (now, kind, vid, detail))

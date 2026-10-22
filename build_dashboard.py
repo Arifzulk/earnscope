@@ -31,9 +31,9 @@ def build(conn=None):
     payload = {
         "generated_at_ms": now_ms,
         "generated_at_wib": fmt_wib(now_ms),
-        "notes": "Snapshot dari API publik Strike (api.strikefinance.org), tanpa auth. "
-                 "Kinerja 'sejak tracker' dihitung dari snapshot EarnScope sendiri; "
-                 "'vs 1.0' mengukur sejak inception (share price awal = 1.0).",
+        "notes": "Snapshot from Strike's public API (api.strikefinance.org), no auth required. "
+                 "'Since tracker' performance is computed from EarnScope's own snapshots; "
+                 "'vs 1.0' measures performance since inception (initial share price = 1.0).",
         **board,
     }
     # Modul ekspansi day-2: masing-masing punya extend(conn, payload),

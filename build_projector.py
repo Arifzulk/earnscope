@@ -33,7 +33,7 @@ SEASON_END_MS = int(__import__("datetime").datetime(
     2026, 10, 28, 23, 59, 59,
     tzinfo=__import__("datetime").timezone(
         __import__("datetime").timedelta(hours=7))).timestamp() * 1000)
-SEASON_END_LABEL = "28 Okt 2026 23:59 WIB (asumsi jam penutupan; jam pasti belum terverifikasi)"
+SEASON_END_LABEL = "28 Oct 2026 23:59 WIB (assumed closing time; the exact closing time is not yet verified)"
 POINTS_PER_DAY = 888
 POOL_STRIKE = 20000
 STRIKE_PER_POINT = 0.7508
@@ -41,15 +41,16 @@ STRIKE_PER_POINT = 0.7508
 SLP_VAULT_ID = "3fd3ab0b-318b-4f99-9ad6-66e9e917bea8"
 
 METHODOLOGY_NOTE = (
-    "ESTIMASI. Strike Rewards Season 1 membagikan 888 poin per hari secara "
-    "pro-rata berdasarkan rata-rata deposit tertimbang waktu, dihitung dari "
-    "snapshot per jam internal milik Strike. EarnScope tidak memiliki akses ke "
-    "snapshot internal tersebut, sehingga proyeksi ini direkonstruksi dari data "
-    "publik: posisi ekuitas terkini tiap depositor SLP dipakai sebagai proksi "
-    "rata-rata deposit tertimbang waktu. Estimasi hanya mencakup sisa hari "
-    "hingga akhir season dan bisa berbeda dari perhitungan resmi Strike. "
-    "Konversi ke STRIKE memakai sekitar 0,7508 STRIKE per poin dari pool "
-    "20.000 STRIKE. Angka ini BUKAN janji hasil."
+    "ESTIMATE. Strike Rewards Season 1 distributes 888 points per day "
+    "pro-rata based on time-weighted average deposits, computed from "
+    "Strike's internal hourly snapshots. EarnScope does not have access to "
+    "those internal snapshots, so this projection is reconstructed from "
+    "public data: each SLP depositor's current equity position is used as a "
+    "proxy for their time-weighted average deposit. The estimate covers only "
+    "the remaining days until the season ends and may differ from Strike's "
+    "official calculation. Conversion to STRIKE uses approximately 0.7508 "
+    "STRIKE per point from the 20,000 STRIKE pool. These figures are NOT a "
+    "promise of returns."
 )
 
 
@@ -140,7 +141,7 @@ def _build_simulator(conn):
             "max_ts": series[-1][0],
             "point_count": len(series),
         }
-    return {"vaults": out, "note": "Seri share price dari snapshot EarnScope sendiri."}
+    return {"vaults": out, "note": "Share price series from EarnScope's own snapshots."}
 
 
 def _build_rewards(conn):
@@ -188,17 +189,17 @@ def extend(conn, payload):
         payload["simulator"] = _build_simulator(conn)
     except Exception as e:
         log.warning("simulator gagal: %s", e)
-        payload["simulator"] = {"error": "data simulator tidak tersedia"}
+        payload["simulator"] = {"error": "simulator data unavailable"}
     try:
         payload["rewards"] = _build_rewards(conn)
     except Exception as e:
         log.warning("rewards gagal: %s", e)
-        payload["rewards"] = {"error": "data rewards tidak tersedia"}
+        payload["rewards"] = {"error": "rewards data unavailable"}
     try:
         payload["tracker"] = _build_tracker(conn)
     except Exception as e:
         log.warning("tracker gagal: %s", e)
-        payload["tracker"] = {"error": "data tracker tidak tersedia"}
+        payload["tracker"] = {"error": "tracker data unavailable"}
     return payload
 
 

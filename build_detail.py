@@ -251,11 +251,12 @@ def extend(conn, payload):
                            "meta": None}
     payload["vault_detail"] = detail
     payload["vault_detail_note"] = (
-        "seri 'series' = snapshot EarnScope sendiri (live, ±5 menit); "
-        "'official_history' = rekonstruksi dari history resmi Strike "
-        "(/v2/vault/{id}/portfolio?period=all, kolom [ts, tvl, pnl, "
-        "feesEarned, depositors, share_price]); 'portfolio' = agregat "
-        "resmi terbaru (API tidak membuka rincian posisi per pasar)."
+        "'series' = EarnScope's own snapshots (live, every ±5 minutes); "
+        "'official_history' = reconstruction from Strike's official history "
+        "(/v2/vault/{id}/portfolio?period=all, columns [ts, tvl, pnl, "
+        "feesEarned, depositors, share_price]); 'portfolio' = latest "
+        "official aggregates (the API does not expose per-market position "
+        "details)."
     )
     return payload
 
@@ -276,4 +277,4 @@ if __name__ == "__main__":
               "| series:", len(d["series"]),
               "| official sp:", len(d["official_history"].get("share_price", [])),
               "| depositor_trend:", len(d["depositor_trend"]),
-              "| portfolio:", "ok" if d["portfolio"] else "kosong")
+              "| portfolio:", "ok" if d["portfolio"] else "empty")

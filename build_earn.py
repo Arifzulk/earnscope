@@ -80,7 +80,7 @@ def _fetch_ada_usd():
                                 "ts": d.get("E"),
                                 "symbol": d.get("s", ADA_SYMBOL),
                                 "error": None}
-                last_err = "bentuk respons tak dikenal"
+                last_err = "unrecognized response shape"
             else:
                 last_err = "HTTP %s" % r.status_code
         except Exception as e:  # proxy egress kadang memutus aneh
@@ -142,15 +142,16 @@ def _build_borrow(conn):
         "slp_first_wib": _fmt_wib(series["first_ts"]),
         "slp_last_wib": _fmt_wib(series["last_ts"]),
         "methodology_note": (
-            "Skema resmi Borrow to Earn: pengguna mengunci jaminan (mis. ADA), "
-            "menerima kredit dalam USD dengan bunga 0 persen, dan kredit itu "
-            "wajib disalurkan ke vault Strike Liquidity Provider (SLP). "
-            "Simulator di borrow.html menghitung: kredit = nilai jaminan x "
-            "persen draw; nilai akhir kredit = kredit x (1 + kinerja SLP pada "
-            "skenario terpilih); kesehatan line = ekuitas jaminan akhir / "
-            "pokok kredit. Harga ADA diambil live dari API pasar Strike setiap "
-            "build; bila gagal, simulator meminta input manual dari pengguna. "
-            "Seri kinerja SLP berasal dari snapshot tracker EarnScope sendiri."
+            "Official Borrow to Earn scheme: users lock collateral (e.g. ADA), "
+            "receive USD credit at 0 percent interest, and that credit must be "
+            "routed into the Strike Liquidity Provider (SLP) vault. The "
+            "simulator in borrow.html computes: credit = collateral value x "
+            "draw percentage; final credit value = credit x (1 + SLP "
+            "performance in the selected scenario); line health = final "
+            "collateral equity / credit principal. The ADA price is fetched "
+            "live from Strike's market API on every build; if that fails, the "
+            "simulator asks the user for manual input. The SLP performance "
+            "series comes from EarnScope's own tracker snapshots."
         ),
     }
 
@@ -187,27 +188,27 @@ def _build_compare(conn, payload):
     # 1. Vault (copy trading)
     products.append({
         "id": "vaults",
-        "name": "Vault Strike",
-        "tagline": ("Vault copy trading: modal mengikuti strategi leader. "
-                    "Kinerja diukur dari share price riil, bukan klaim APR."),
+        "name": "Strike Vaults",
+        "tagline": ("Copy-trading vaults: capital follows a leader's strategy. "
+                    "Performance is measured from real share price, not APR claims."),
         "numbers": [
-            {"label": "Vault terlacak", "value": len(vrows), "unit": ""},
+            {"label": "Vaults tracked", "value": len(vrows), "unit": ""},
             {"label": "Total equity", "value": sum(equities) if equities else None,
              "unit": "USD"},
-            {"label": "Kinerja terbaik vs 1.0",
+            {"label": "Best performance vs 1.0",
              "value": max(perfs) if perfs else None, "unit": "%"},
-            {"label": "Kinerja terburuk vs 1.0",
+            {"label": "Worst performance vs 1.0",
              "value": min(perfs) if perfs else None, "unit": "%"},
-            {"label": "Vault underwater",
+            {"label": "Underwater vaults",
              "value": eco.get("underwater_count"), "unit": ""},
         ],
         "vaults": vrows,
         "methodology": (
-            "Share price, equity, dan jumlah depositor diambil dari API publik "
-            "Strike tiap ±5 menit. 'Kinerja vs 1.0' = (share price / 1.0 - 1), "
-            "mengukur sejak inception vault. 'Sejak tracker' mengukur sejak "
-            "snapshot pertama EarnScope. Komisi leader memotong hasil dan "
-            "sudah tercermin di share price."
+            "Share price, equity, and depositor counts are taken from Strike's "
+            "public API every ±5 minutes. 'Performance vs 1.0' = (share price "
+            "/ 1.0 - 1), measured since vault inception. 'Since tracker' "
+            "measures from EarnScope's first snapshot. Leader commissions "
+            "reduce returns and are already reflected in the share price."
         ),
         "data_gaps": [],
         "detail_page": "index.html",
@@ -237,49 +238,50 @@ def _build_compare(conn, payload):
     products.append({
         "id": "slp_points",
         "name": "SLP + Strike Rewards",
-        "tagline": ("Deposit di vault SLP sekaligus mengumpulkan poin Season 1 "
-                    "yang dikonversi menjadi STRIKE. Angka boost di bawah ini "
-                    "berlabel ESTIMASI."),
+        "tagline": ("Depositing in the SLP vault also earns Season 1 points "
+                    "that convert into STRIKE. The boost figures below are "
+                    "labeled ESTIMATE."),
         "is_estimate": True,
         "numbers": [
-            {"label": "Kinerja SLP vs 1.0",
+            {"label": "SLP performance vs 1.0",
              "value": slp.get("perf_vs_1_pct") if slp else None, "unit": "%"},
-            {"label": "Kinerja SLP sejak tracker",
+            {"label": "SLP performance since tracker",
              "value": slp.get("perf_sejak_tracker_pct") if slp else None,
              "unit": "%"},
-            {"label": "Equity SLP", "value": slp_equity, "unit": "USD"},
-            {"label": "Depositor SLP",
+            {"label": "SLP equity", "value": slp_equity, "unit": "USD"},
+            {"label": "SLP depositors",
              "value": slp.get("depositors") if slp else None, "unit": ""},
-            {"label": "ESTIMASI poin per hari per $1.000",
+            {"label": "ESTIMATED points per day per $1,000",
              "value": (boost["per_1000_usd"]["points_per_day"]
-                       if boost else None), "unit": "poin"},
-            {"label": "ESTIMASI STRIKE per hari per $1.000",
+                       if boost else None), "unit": "points"},
+            {"label": "ESTIMATED STRIKE per day per $1,000",
              "value": (boost["per_1000_usd"]["strike_per_day"]
                        if boost else None), "unit": "STRIKE"},
-            {"label": "ESTIMASI STRIKE s/d akhir season per $1.000",
+            {"label": "ESTIMATED STRIKE until season end per $1,000",
              "value": (boost["per_1000_usd"]["strike_until_season_end"]
                        if boost else None), "unit": "STRIKE"},
-            {"label": "Sisa waktu season",
-             "value": round(remaining, 1), "unit": "hari"},
+            {"label": "Time left in season",
+             "value": round(remaining, 1), "unit": "days"},
         ],
         "season": {
-            "ends": "28 Okt 2026",
+            "ends": "28 Oct 2026",
             "points_per_day": POINTS_PER_DAY,
             "pool_strike": SEASON_POOL_STRIKE,
             "strike_per_point": STRIKE_PER_POINT,
             "remaining_days": round(remaining, 2),
         },
         "methodology": (
-            "Parameter resmi Season 1: 888 poin per hari dibagi pro-rata "
-            "berdasarkan rata-rata deposit tertimbang waktu; pool 20.000 "
-            "STRIKE; ±0,7508 STRIKE per poin; season berakhir 28 Okt 2026. "
-            "Strike menghitung poin dari snapshot per jam di server internal "
-            "mereka; angka di sini merekonstruksi pembagian pro-rata dari "
-            "equity SLP publik sehingga ini ESTIMASI, bukan angka resmi."
+            "Official Season 1 parameters: 888 points per day split pro-rata "
+            "based on time-weighted average deposits; 20,000 STRIKE pool; "
+            "±0.7508 STRIKE per point; season ends 28 Oct 2026. Strike "
+            "computes points from hourly snapshots on their internal servers; "
+            "the figures here reconstruct the pro-rata split from public SLP "
+            "equity, so they are ESTIMATES, not official numbers."
         ),
         "data_gaps": [
-            "Rata-rata deposit tertimbang waktu per depositor tidak tersedia "
-            "publik; pro-rata dihitung dari equity agregat snapshot terakhir.",
+            "Time-weighted average deposits per depositor are not publicly "
+            "available; the pro-rata split is computed from the aggregate "
+            "equity of the latest snapshot.",
         ],
         "detail_page": None,
     })
@@ -289,41 +291,43 @@ def _build_compare(conn, payload):
     products.append({
         "id": "borrow",
         "name": "Borrow to Earn",
-        "tagline": ("Jaminan (mis. ADA) menjadi kredit USD bunga 0 persen yang "
-                    "wajib masuk SLP: eksposur SLP ter-leverage tanpa biaya bunga."),
+        "tagline": ("Collateral (e.g. ADA) becomes 0 percent interest USD "
+                    "credit that must go into SLP: leveraged SLP exposure "
+                    "with no interest cost."),
         "numbers": [
-            {"label": "Harga ADA-USD (live)",
+            {"label": "ADA-USD price (live)",
              "value": borrow.get("ada_usd"), "unit": "USD",
              "note": borrow.get("ada_usd_ts_wib")},
-            {"label": "Kinerja SLP sejak tracker (basis leverage)",
+            {"label": "SLP performance since tracker (leverage basis)",
              "value": slp.get("perf_sejak_tracker_pct") if slp else None,
              "unit": "%"},
-            {"label": "Bunga kredit", "value": 0, "unit": "%"},
-            {"label": "Tujuan wajib kredit", "value": "Vault SLP", "unit": ""},
+            {"label": "Credit interest", "value": 0, "unit": "%"},
+            {"label": "Mandatory credit destination", "value": "SLP vault", "unit": ""},
         ],
         "mechanism": [
-            "Kunci jaminan, mis. ADA senilai C USD.",
-            "Tarik kredit USD sebesar persen draw dari C, bunga 0 persen.",
-            "Kredit wajib disalurkan ke vault SLP.",
-            "Hasil bersih = nilai kredit di SLP pada akhir horizon - pokok kredit.",
-            "Kesehatan line = ekuitas jaminan akhir / pokok kredit.",
+            "Lock collateral, e.g. ADA worth C USD.",
+            "Draw USD credit equal to a draw percentage of C, at 0 percent interest.",
+            "The credit must be routed into the SLP vault.",
+            "Net result = credit value in SLP at the end of the horizon - credit principal.",
+            "Line health = final collateral equity / credit principal.",
         ],
         "health_thresholds": [
-            {"min_ratio": 2.0, "status": "Aman"},
-            {"min_ratio": 1.5, "status": "Waspada"},
-            {"min_ratio": 0.0, "status": "Bahaya"},
+            {"min_ratio": 2.0, "status": "Safe"},
+            {"min_ratio": 1.5, "status": "Caution"},
+            {"min_ratio": 0.0, "status": "Danger"},
         ],
         "methodology": (
-            "Mekanisme mengikuti halaman resmi Borrow and Earn di "
-            "docs.strikefinance.org. Simulator memakai harga ADA live dari "
-            "API pasar Strike dan kinerja SLP historis dari snapshot "
-            "EarnScope. Threshold kesehatan line adalah asumsi EarnScope: "
-            "Strike tidak mempublikasikan rasio likuidasi resmi."
+            "The mechanism follows the official Borrow and Earn page at "
+            "docs.strikefinance.org. The simulator uses the live ADA price "
+            "from Strike's market API and historical SLP performance from "
+            "EarnScope snapshots. The line health thresholds are EarnScope "
+            "assumptions: Strike does not publish an official liquidation "
+            "ratio."
         ),
         "data_gaps": [
-            "Rasio likuidasi / margin call resmi tidak dipublikasikan.",
-            "Persentase draw maksimum per jenis jaminan tidak dipublikasikan "
-            "via API publik.",
+            "The official liquidation / margin call ratio is not published.",
+            "The maximum draw percentage per collateral type is not "
+            "published via the public API.",
         ],
         "detail_page": "borrow.html",
     })
@@ -332,24 +336,25 @@ def _build_compare(conn, payload):
     products.append({
         "id": "staking",
         "name": "Staking STRIKE",
-        "tagline": "Bagi hasil revenue Strike untuk staker STRIKE.",
+        "tagline": "Revenue sharing from Strike for STRIKE stakers.",
         "numbers": [
-            {"label": "APR resmi",
+            {"label": "Official APR",
              "value": None, "unit": "",
-             "status": "Tidak dipublikasikan"},
-            {"label": "Mekanisme bagi hasil",
+             "status": "Not published"},
+            {"label": "Revenue sharing mechanism",
              "value": "Revenue sharing", "unit": ""},
         ],
         "methodology": (
-            "Tokenomics Strike menyebut staker menerima bagian revenue. "
-            "Namun APR resmi TIDAK dipublikasikan melalui API publik mana pun "
-            "yang kami temukan, dan total staking resmi tidak bisa diturunkan "
-            "dari data on-chain (registry staking bersifat opt-in di server "
-            "Strike). EarnScope menulis apa adanya dan tidak mengarang angka."
+            "Strike's tokenomics state that stakers receive a share of "
+            "revenue. However, no official APR is published through any "
+            "public API we could find, and the official total staked cannot "
+            "be derived from on-chain data (the staking registry is opt-in "
+            "and stored on Strike's servers). EarnScope reports this as-is "
+            "and does not invent numbers."
         ),
         "data_gaps": [
-            "APR / APY staking tidak dipublikasikan.",
-            "Total STRIKE yang di-stake tidak bisa diverifikasi on-chain.",
+            "Staking APR / APY is not published.",
+            "Total STRIKE staked cannot be verified on-chain.",
         ],
         "detail_page": "onchain.html",
     })
@@ -389,16 +394,16 @@ def _build_onchain(conn):
         "ts_wib": _fmt_wib(int(latest["ts"])) if latest is not None else None,
         "history": history,
         "snapshot_count": len(history),
-        "source": "Koios (api.koios.rest): asset_addresses + asset_info, tanpa key",
+        "source": "Koios (api.koios.rest): asset_addresses + asset_info, no API key required",
         "methodology": (
-            "Jumlah holder dan konsentrasi top holder dihitung dari seluruh "
-            "alamat pemegang aset STRIKE via Koios asset_addresses (paginasi), "
-            "supply dari asset_info; snapshot diambil 1x per hari. "
-            "Total staking resmi TIDAK ditampilkan di panel ini dalam bentuk "
-            "apa pun: liquid staking Strike memakai registry opt-in yang "
-            "disimpan di server Strike (off-chain), sehingga tidak bisa "
-            "diturunkan dari data on-chain. Panel ini tidak mengarang angka "
-            "staking."
+            "Holder count and top-holder concentration are computed from all "
+            "addresses holding the STRIKE asset via Koios asset_addresses "
+            "(paginated); supply comes from asset_info; snapshots are taken "
+            "once per day. The official total staked is NOT shown in this "
+            "panel in any form: Strike's liquid staking uses an opt-in "
+            "registry stored on Strike's servers (off-chain), so it cannot "
+            "be derived from on-chain data. This panel does not invent "
+            "staking numbers."
         ),
     }
     return out
@@ -408,7 +413,7 @@ def _skeleton_borrow(err):
     return {"ada_usd": None, "ada_usd_ts": None, "ada_usd_ts_wib": None,
             "ada_symbol": ADA_SYMBOL, "last_ok": False, "fetch_error": err,
             "slp_series": [], "slp_series_raw_count": 0,
-            "methodology_note": "Gagal membangun data borrow pada build ini."}
+            "methodology_note": "Failed to build borrow data in this build."}
 
 
 def _skeleton_onchain(err):
@@ -417,9 +422,9 @@ def _skeleton_onchain(err):
             "supply_strike": 25000000,
             "ts": None, "ts_wib": None, "history": [], "snapshot_count": 0,
             "error": err,
-            "methodology": ("Data holder belum tersedia pada build ini. "
-                            "Total staking resmi tidak bisa diturunkan "
-                            "on-chain dan tidak ditampilkan.")}
+            "methodology": ("Holder data is not available in this build yet. "
+                            "The official total staked cannot be derived "
+                            "on-chain and is not displayed.")}
 
 
 def extend(conn, payload):

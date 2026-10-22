@@ -1,3 +1,5 @@
-data/
+data/*.db
+data/*.log
+data/collector.pid
 __pycache__/
 *.pyc
