@@ -3,53 +3,88 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>Borrow to Earn Simulator - EarnScope</title>
 <style>
-  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+  :root { --bg:#0b0e13; --card:rgba(21,27,38,.82); --line:rgba(148,163,184,.15);
+          --txt:#e9eef5; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt);
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  html { color-scheme:dark; scroll-behavior:smooth; }
+  body { margin:0; color:var(--txt);
+         font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+         background:
+           radial-gradient(1000px 500px at 12% -8%, rgba(52,211,153,.12), transparent 60%),
+           radial-gradient(1000px 560px at 88% -10%, rgba(96,165,250,.14), transparent 60%),
+           radial-gradient(820px 620px at 50% 115%, rgba(96,165,250,.06), transparent 60%),
+           var(--bg);
+         background-attachment:fixed; }
   .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
-  nav { margin-bottom:16px; font-size:14px; }
-  nav a { color:var(--blue); text-decoration:none; margin-right:16px; }
-  nav a:hover { text-decoration:underline; }
-  nav a.cur { color:var(--green); font-weight:700; }
-  h1 { margin:0 0 4px; font-size:26px; }
+  nav { position:sticky; top:10px; z-index:60; display:flex; gap:4px; flex-wrap:wrap;
+        padding:6px; margin-bottom:22px; border-radius:22px;
+        background:rgba(11,14,19,.78); border:1px solid var(--line);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 12px 32px rgba(0,0,0,.45); }
+  nav a { color:var(--mut); text-decoration:none; padding:8px 14px; border-radius:999px;
+          font-size:14px; font-weight:600; transition:all .18s ease; }
+  nav a:hover { color:var(--txt); background:rgba(255,255,255,.07); }
+  nav a.cur { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+              font-weight:700; box-shadow:0 4px 16px rgba(52,211,153,.35); }
+  h1 { margin:0 0 4px; font-size:28px; font-weight:800; letter-spacing:-.02em;
+       background:linear-gradient(92deg,#34d399,#60a5fa);
+       -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sub { color:var(--mut); margin:0 0 20px; }
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px;
+          padding:18px; box-shadow:0 12px 32px rgba(0,0,0,.35); }
   .card h2 { margin:0 0 12px; font-size:17px; }
   label { display:block; font-size:13px; color:var(--mut); margin:12px 0 4px; }
   label b { color:var(--txt); }
-  input[type=number], select { width:100%; padding:10px 12px; border-radius:8px;
-    border:1px solid var(--line); background:#0e1116; color:var(--txt); font-size:15px; }
-  input[type=range] { width:100%; }
+  input[type=number], select { width:100%; padding:10px 12px; border-radius:10px;
+    border:1px solid var(--line); background:rgba(255,255,255,.03); color:var(--txt);
+    font-size:15px; font-family:inherit; transition:border-color .15s ease, box-shadow .15s ease; }
+  input[type=number]:focus, select:focus { border-color:rgba(96,165,250,.6);
+    box-shadow:0 0 0 3px rgba(96,165,250,.18); outline:none; }
+  input[type=range] { width:100%; accent-color:var(--blue); }
   .rval { font-weight:700; color:var(--blue); }
   .steps { margin:0; padding-left:20px; color:var(--mut); font-size:14px; }
   .steps li { margin:6px 0; }
+  .steps li b { color:var(--txt); }
   .res { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:16px; }
-  .stat { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .stat { background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
   .stat .k { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
   .stat .v { font-size:20px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
   .pos { color:var(--green); } .neg { color:var(--red); }
-  .health { margin-top:16px; padding:16px; border-radius:12px; border:1px solid var(--line); }
-  .health.aman { border-color:var(--green); background:rgba(52,211,153,.07); }
-  .health.waspada { border-color:var(--amber); background:rgba(251,191,36,.07); }
-  .health.bahaya { border-color:var(--red); background:rgba(248,113,113,.07); }
-  .health .st { font-size:22px; font-weight:800; }
+  .health { margin-top:16px; padding:16px; border-radius:14px; border:1px solid var(--line);
+            transition:border-color .25s ease, background .25s ease, box-shadow .25s ease; }
+  .health.aman { border-color:rgba(52,211,153,.55); background:rgba(52,211,153,.07);
+                 box-shadow:0 0 24px rgba(52,211,153,.12); }
+  .health.waspada { border-color:rgba(251,191,36,.55); background:rgba(251,191,36,.07);
+                    box-shadow:0 0 24px rgba(251,191,36,.12); }
+  .health.bahaya { border-color:rgba(248,113,113,.55); background:rgba(248,113,113,.07);
+                   box-shadow:0 0 24px rgba(248,113,113,.12); }
+  .health .st { font-size:22px; font-weight:800; letter-spacing:.02em; }
   .health.aman .st { color:var(--green); } .health.waspada .st { color:var(--amber); }
   .health.bahaya .st { color:var(--red); }
-  .bar { height:10px; background:#0e1116; border-radius:999px; margin-top:10px; overflow:hidden; }
-  .bar > div { height:100%; border-radius:999px; }
-  .disc { margin-top:20px; background:#1a1408; border:1px solid #5b4a1e; color:#fcd34d;
-          border-radius:12px; padding:14px 16px; font-size:13.5px; }
+  .bar { height:10px; background:rgba(255,255,255,.05); border-radius:999px; margin-top:10px; overflow:hidden; }
+  .bar > div { height:100%; border-radius:999px; transition:width .5s ease; }
+  .disc { margin-top:20px; background:rgba(26,20,8,.85); border:1px solid rgba(251,191,36,.35);
+          color:#fcd34d; border-radius:14px; padding:14px 16px; font-size:13.5px; }
   .disc b { color:#fde68a; }
-  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
-         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  #err { background:rgba(58,29,29,.85); border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:12px; margin-bottom:16px; display:none; }
   canvas { width:100%; height:180px; display:block; }
   .cap { font-size:12px; color:var(--mut); margin-top:6px; }
   footer { margin-top:24px; color:var(--mut); font-size:13px; }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } }
+  .card { animation:rise .55s ease backwards; }
+  .grid .card:nth-child(2) { animation-delay:.08s; }
+  :focus-visible { outline:2px solid rgba(96,165,250,.65); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
@@ -183,16 +218,35 @@ function drawChart(series){
   const min = Math.min(...vals), max = Math.max(...vals), rng = (max-min)||1;
   const X = i => 8 + i/(series.length-1)*(W-16);
   const Y = v => H-14 - (v-min)/rng*(H-28);
-  ctx.strokeStyle = "#242c38"; ctx.beginPath(); ctx.moveTo(0,H-14); ctx.lineTo(W,H-14); ctx.stroke();
+  ctx.strokeStyle = "rgba(148,163,184,.25)"; ctx.beginPath(); ctx.moveTo(0,H-14); ctx.lineTo(W,H-14); ctx.stroke();
   const up = vals[vals.length-1] >= vals[0];
-  ctx.strokeStyle = up ? "#34d399" : "#f87171"; ctx.lineWidth = 2; ctx.beginPath();
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, up ? "rgba(52,211,153,.28)" : "rgba(248,113,113,.28)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.beginPath();
+  series.forEach((p,i)=>{ i?ctx.lineTo(X(i),Y(p[1])):ctx.moveTo(X(i),Y(p[1])); });
+  ctx.lineTo(X(series.length-1), H-14); ctx.lineTo(X(0), H-14); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.strokeStyle = up ? "#34d399" : "#f87171"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.beginPath();
   series.forEach((p,i)=>{ i?ctx.lineTo(X(i),Y(p[1])):ctx.moveTo(X(i),Y(p[1])); });
   ctx.stroke();
-  ctx.fillStyle = "#9aa5b4"; ctx.font = "11px sans-serif";
+  ctx.fillStyle = "#9aa5b4"; ctx.font = "11px Inter, sans-serif";
   ctx.fillText(max.toFixed(4), 10, 14); ctx.fillText(min.toFixed(4), 10, H-18);
 }
 
+function countUp(el, end, fmt){
+  if (!el || typeof end !== "number" || !isFinite(end)) return;
+  const dur = 800, t0 = performance.now();
+  function frame(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(end * e);
+    if (p < 1) requestAnimationFrame(frame); else el.textContent = fmt(end);
+  }
+  requestAnimationFrame(frame);
+}
+
 let SCEN = [];
+let firstCalc = true;
 async function load(){
   try{
     const r = await fetch("data.json",{cache:"no-store"});
@@ -247,6 +301,15 @@ function calc(){
     row("Net result from credit", fmtUSD(netCredit), netCredit==null?"":(netCredit>=0?"pos":"neg")) +
     row("Final collateral equity", fmtUSD(collEnd)) +
     row("Total net vs start", fmtUSD(netTotal), netTotal==null?"":(netTotal>=0?"pos":"neg"));
+  if (firstCalc) {
+    firstCalc = false;
+    const bvs = document.querySelectorAll("#results .stat .v");
+    countUp(bvs[0], principal, fmtUSD);
+    countUp(bvs[2], creditEnd, fmtUSD);
+    countUp(bvs[3], netCredit, fmtUSD);
+    countUp(bvs[4], collEnd, fmtUSD);
+    countUp(bvs[5], netTotal, fmtUSD);
+  }
 
   const hb = $("healthBox");
   if (ratio==null){

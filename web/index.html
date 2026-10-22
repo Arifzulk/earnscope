@@ -3,71 +3,130 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>EarnScope: Strike Finance Earn Transparency</title>
 <style>
-  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+  :root { --bg:#0b0e13; --card:rgba(21,27,38,.82); --line:rgba(148,163,184,.15);
+          --txt:#e9eef5; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt);
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  html { color-scheme:dark; scroll-behavior:smooth; }
+  body { margin:0; color:var(--txt);
+         font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+         background:
+           radial-gradient(1000px 500px at 12% -8%, rgba(52,211,153,.12), transparent 60%),
+           radial-gradient(1000px 560px at 88% -10%, rgba(96,165,250,.14), transparent 60%),
+           radial-gradient(820px 620px at 50% 115%, rgba(96,165,250,.06), transparent 60%),
+           var(--bg);
+         background-attachment:fixed; }
   .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
-  nav { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; }
-  nav a { color:var(--txt); text-decoration:none; border:1px solid var(--line);
-           background:var(--card); padding:8px 14px; border-radius:999px; font-size:14px; }
-  nav a.active { border-color:var(--blue); color:var(--blue); }
-  header h1 { margin:0 0 4px; font-size:28px; }
-  header h1 .scope { color:var(--blue); }
+  nav { position:sticky; top:10px; z-index:60; display:flex; gap:4px; flex-wrap:wrap;
+        padding:6px; margin-bottom:22px; border-radius:22px;
+        background:rgba(11,14,19,.78); border:1px solid var(--line);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 12px 32px rgba(0,0,0,.45); }
+  nav a { color:var(--mut); text-decoration:none; padding:8px 14px; border-radius:999px;
+          font-size:14px; font-weight:600; transition:all .18s ease; }
+  nav a:hover { color:var(--txt); background:rgba(255,255,255,.07); }
+  nav a.active { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+                 font-weight:700; box-shadow:0 4px 16px rgba(52,211,153,.35); }
+  header h1 { margin:0 0 4px; font-size:30px; font-weight:800; letter-spacing:-.02em; }
+  header h1 .scope { background:linear-gradient(92deg,#34d399,#60a5fa);
+                     -webkit-background-clip:text; background-clip:text; color:transparent; }
   header p { margin:0 0 16px; color:var(--mut); }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
            gap:12px; margin-bottom:20px; }
-  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
-          padding:14px 16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:14px 16px; box-shadow:0 8px 24px rgba(0,0,0,.32);
+          transition:transform .18s ease, border-color .18s ease; }
+  .strip .stat:hover { transform:translateY(-2px); border-color:rgba(148,163,184,.32); }
   .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
-  .stat .v { font-size:24px; font-weight:700; margin-top:4px; }
+  .stat .v { font-size:24px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
   .stat .v.red { color:var(--red); } .stat .v.green { color:var(--green); }
-  .tblwrap { overflow-x:auto; border:1px solid var(--line); border-radius:12px;
-             background:var(--card); }
+  .tblwrap { overflow-x:auto; border:1px solid var(--line); border-radius:16px;
+             background:var(--card); box-shadow:0 12px 32px rgba(0,0,0,.35); }
   table { width:100%; border-collapse:collapse; min-width:760px; }
   th, td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); }
-  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+       background:rgba(255,255,255,.02); }
+  tbody tr { transition:background .15s ease; }
+  tbody tr:hover { background:rgba(96,165,250,.07); }
   tr:last-child td { border-bottom:none; }
   td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .rank { display:inline-flex; align-items:center; justify-content:center;
+          width:26px; height:26px; border-radius:50%; font-weight:800; font-size:13px;
+          background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--mut); }
+  .rank.r1 { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+             border:none; box-shadow:0 0 14px rgba(52,211,153,.45); }
+  .rank.r2 { background:rgba(96,165,250,.18); color:var(--blue); border-color:rgba(96,165,250,.35); }
+  .rank.r3 { background:rgba(251,191,36,.15); color:var(--amber); border-color:rgba(251,191,36,.35); }
+  .perf { display:inline-block; padding:3px 10px; border-radius:999px; font-weight:700;
+          font-variant-numeric:tabular-nums; background:rgba(255,255,255,.06); color:var(--mut); }
+  .perf.pos { background:rgba(52,211,153,.14); color:var(--green); }
+  .perf.neg { background:rgba(248,113,113,.14); color:var(--red); }
+  .pbar { height:4px; background:rgba(255,255,255,.06); border-radius:999px;
+          margin-top:6px; overflow:hidden; min-width:90px; }
+  .pbar > div { height:100%; border-radius:999px; }
   .badge { display:inline-block; padding:3px 10px; border-radius:999px;
            font-size:12px; font-weight:700; }
-  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green); }
-  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red); }
+  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green);
+                   box-shadow:0 0 12px rgba(52,211,153,.22); }
+  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red);
+                      box-shadow:0 0 12px rgba(248,113,113,.22); }
   .badge.proto { background:rgba(96,165,250,.15); color:var(--blue); }
-  .vlink { color:var(--txt); text-decoration:none; }
+  .vlink { color:var(--txt); text-decoration:none; transition:color .15s ease; }
   .vlink:hover { color:var(--blue); }
   .vlink .go { color:var(--blue); font-size:12px; }
   .pos { color:var(--green); } .neg { color:var(--red); }
   .spark { height:32px; width:120px; }
   footer { margin-top:24px; color:var(--mut); font-size:13px; }
   footer .upd { color:var(--amber); font-weight:600; }
-  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
-         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  #err { background:rgba(58,29,29,.85); border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:12px; margin-bottom:16px; display:none; }
   .events { margin-top:20px; background:var(--card); border:1px solid var(--line);
-            border-radius:12px; padding:14px 16px; }
+            border-radius:16px; padding:16px 18px; box-shadow:0 12px 32px rgba(0,0,0,.35); }
   .events h2 { margin:0 0 8px; font-size:16px; }
   .events li { margin:6px 0; color:var(--mut); font-size:14px; }
   .events li b { color:var(--txt); }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } }
+  @keyframes fadein { from { opacity:0; } }
+  .strip .stat { animation:rise .55s ease backwards; }
+  .strip .stat:nth-child(2) { animation-delay:.06s; }
+  .strip .stat:nth-child(3) { animation-delay:.12s; }
+  .strip .stat:nth-child(4) { animation-delay:.18s; }
+  .tblwrap, .events { animation:rise .55s ease backwards; animation-delay:.1s; }
+  .events { animation-delay:.2s; }
+  tbody tr { animation:fadein .4s ease backwards; }
+  tbody tr:nth-child(2) { animation-delay:.04s; }
+  tbody tr:nth-child(3) { animation-delay:.08s; }
+  tbody tr:nth-child(4) { animation-delay:.12s; }
+  tbody tr:nth-child(5) { animation-delay:.16s; }
+  tbody tr:nth-child(6) { animation-delay:.2s; }
+  tbody tr:nth-child(7) { animation-delay:.24s; }
+  tbody tr:nth-child(8) { animation-delay:.28s; }
+  :focus-visible { outline:2px solid rgba(96,165,250,.65); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <nav>
+    <a href="index.html" class="active">Leaderboard</a>
+    <a href="vault.html">Vault Detail</a>
+    <a href="simulator.html">Deposit Simulator</a>
+    <a href="rewards.html">Rewards Projector</a>
+    <a href="tracker.html">Position Tracker</a>
+    <a href="borrow.html">Borrow to Earn</a>
+    <a href="compare.html">Compare Board</a>
+    <a href="onchain.html">STRIKE on-chain</a>
+  </nav>
   <header>
     <h1>Earn<span class="scope">Scope</span></h1>
     <p>An independent transparency hub for the entire Strike Finance Earn menu, measured from real data, not APR claims.</p>
-    <nav>
-      <a href="index.html" class="active">Leaderboard</a>
-      <a href="vault.html">Vault Detail</a>
-      <a href="simulator.html">Deposit Simulator</a>
-      <a href="rewards.html">Rewards Projector</a>
-      <a href="tracker.html">Position Tracker</a>
-      <a href="borrow.html">Borrow to Earn</a>
-      <a href="compare.html">Compare Board</a>
-      <a href="onchain.html">STRIKE on-chain</a>
-    </nav>
   </header>
   <div id="err"></div>
   <div class="strip" id="strip"></div>
@@ -97,6 +156,7 @@ const fmtUSD = n => n == null ? "-" : "$" + Number(n).toLocaleString("en-US",{ma
 const fmtPct = n => n == null ? "-" : (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
 const pctCls = n => n == null ? "" : (n >= 0 ? "pos" : "neg");
 
+let sparkSeq = 0;
 function sparkSVG(data) {
   if (!data || data.length < 2) return "";
   const w = 120, h = 32, min = Math.min(...data), max = Math.max(...data);
@@ -104,13 +164,25 @@ function sparkSVG(data) {
   const pts = data.map((v,i) => `${(i/(data.length-1)*w).toFixed(1)},${(h-3-(v-min)/rng*(h-6)).toFixed(1)}`).join(" ");
   const up = data[data.length-1] >= data[0];
   const c = up ? "#34d399" : "#f87171";
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2"/></svg>`;
+  const gid = "sg" + (sparkSeq++);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".30"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs><polygon points="${pts} ${w},${h} 0,${h}" fill="url(#${gid})"/><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 function badge(label, type) {
   const lbl = label === "Underwater" ? "Underwater" : (label === "Healthy" ? "Healthy" : label);
   const t = type === "protocol" ? ' <span class="badge proto">Protocol</span>' : "";
   return `<span class="badge ${label === "Underwater" ? "underwater" : "healthy"}">${lbl}</span>${t}`;
+}
+
+function countUp(el, end, fmt){
+  if (!el || typeof end !== "number" || !isFinite(end)) return;
+  const dur = 800, t0 = performance.now();
+  function frame(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(end * e);
+    if (p < 1) requestAnimationFrame(frame); else el.textContent = fmt(end);
+  }
+  requestAnimationFrame(frame);
 }
 
 async function load() {
@@ -126,23 +198,29 @@ async function load() {
       <div class="stat"><div class="k">Total depositors</div><div class="v">${e.total_depositors}</div></div>
       <div class="stat"><div class="k">Underwater vaults</div><div class="v red">${e.underwater_count} / ${e.vault_count}</div></div>
       <div class="stat"><div class="k">Healthy vaults</div><div class="v green">${e.healthy_count}</div></div>`;
-    // Petakan nama vault -> id detail (dipakai link ke vault.html?id=...)
+    const sv = document.querySelectorAll("#strip .stat .v");
+    countUp(sv[0], e.total_equity, fmtUSD);
+    countUp(sv[1], e.total_depositors, n => String(Math.round(n)));
+    countUp(sv[3], e.healthy_count, n => String(Math.round(n)));
+    // Map vault name -> detail id (used for links to vault.html?id=...)
     const idByName = {};
     Object.entries(d.vault_detail || {}).forEach(([vid, det]) => {
       const nm = det && det.meta && det.meta.name;
       if (nm) idByName[nm] = vid;
     });
+    const perfs = d.vaults.map(v => v.perf_vs_1_pct).filter(x => x != null && isFinite(x));
+    const pMin = perfs.length ? Math.min(...perfs) : 0, pMax = perfs.length ? Math.max(...perfs) : 0;
     document.getElementById("rows").innerHTML = d.vaults.map((v,i) => {
       const did = idByName[v.name];
       const nameCell = did
         ? `<a class="vlink" href="vault.html?id=${encodeURIComponent(did)}"><b>${v.name}</b> <span class="go">&rarr;</span></a>`
         : `<b>${v.name}</b>`;
       return `
-      <tr><td>${i+1}</td>
+      <tr><td><span class="rank r${i+1}">${i+1}</span></td>
         <td>${nameCell}<br><span style="color:#9aa5b4;font-size:12px">${v.type === "protocol" ? "Official Strike vault" : "User vault"} · lockup ${v.lockup_days} days · min $${v.min_deposit}</span></td>
         <td>${badge(v.risk_label, v.type)}</td>
         <td class="num">${v.share_price == null ? "-" : v.share_price.toFixed(6)}</td>
-        <td class="num ${pctCls(v.perf_vs_1_pct)}">${fmtPct(v.perf_vs_1_pct)}</td>
+        <td class="num"><span class="perf ${pctCls(v.perf_vs_1_pct)}">${fmtPct(v.perf_vs_1_pct)}</span><div class="pbar"><div style="width:${v.perf_vs_1_pct == null ? 0 : (pMax === pMin ? 100 : ((v.perf_vs_1_pct - pMin) / (pMax - pMin) * 100).toFixed(1))}%;background:${v.perf_vs_1_pct != null && v.perf_vs_1_pct < 0 ? "var(--red)" : "var(--green)"}"></div></div></td>
         <td class="num">${fmtUSD(v.equity)}</td>
         <td class="num">${v.depositors}</td>
         <td class="num">${(v.leader_commission_bps/100).toFixed(v.leader_commission_bps % 100 ? 2 : 0)}%</td>

@@ -3,49 +3,99 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>Rewards Projector - EarnScope</title>
 <style>
-  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+  :root { --bg:#0b0e13; --card:rgba(21,27,38,.82); --line:rgba(148,163,184,.15);
+          --txt:#e9eef5; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt);
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  html { color-scheme:dark; scroll-behavior:smooth; }
+  body { margin:0; color:var(--txt);
+         font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+         background:
+           radial-gradient(1000px 500px at 12% -8%, rgba(52,211,153,.12), transparent 60%),
+           radial-gradient(1000px 560px at 88% -10%, rgba(96,165,250,.14), transparent 60%),
+           radial-gradient(820px 620px at 50% 115%, rgba(96,165,250,.06), transparent 60%),
+           var(--bg);
+         background-attachment:fixed; }
   .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
-  nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
-  nav a { color:var(--txt); text-decoration:none; border:1px solid var(--line);
-           background:var(--card); padding:8px 14px; border-radius:999px; font-size:14px; }
-  nav a.active { border-color:var(--blue); color:var(--blue); }
-  header h1 { margin:0 0 4px; font-size:26px; }
-  header h1 .scope { color:var(--blue); }
+  nav { position:sticky; top:10px; z-index:60; display:flex; gap:4px; flex-wrap:wrap;
+        padding:6px; margin-bottom:22px; border-radius:22px;
+        background:rgba(11,14,19,.78); border:1px solid var(--line);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 12px 32px rgba(0,0,0,.45); }
+  nav a { color:var(--mut); text-decoration:none; padding:8px 14px; border-radius:999px;
+          font-size:14px; font-weight:600; transition:all .18s ease; }
+  nav a:hover { color:var(--txt); background:rgba(255,255,255,.07); }
+  nav a.active { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+                 font-weight:700; box-shadow:0 4px 16px rgba(52,211,153,.35); }
+  header h1 { margin:0 0 4px; font-size:28px; font-weight:800; letter-spacing:-.02em; }
+  header h1 .scope { background:linear-gradient(92deg,#34d399,#60a5fa);
+                     -webkit-background-clip:text; background-clip:text; color:transparent; }
   header p { margin:0 0 16px; color:var(--mut); font-size:14px; }
-  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
-         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  #err { background:rgba(58,29,29,.85); border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:12px; margin-bottom:16px; display:none; }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
            gap:12px; margin-bottom:16px; }
-  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
-          padding:14px 16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:14px 16px; box-shadow:0 8px 24px rgba(0,0,0,.32);
+          transition:transform .18s ease, border-color .18s ease; }
+  .strip .stat:hover { transform:translateY(-2px); border-color:rgba(148,163,184,.32); }
   .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
-  .stat .v { font-size:22px; font-weight:700; margin-top:4px; }
+  .stat .v { font-size:22px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
   .est { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;
-         background:rgba(251,191,36,.15); color:var(--amber); }
-  .countdown { background:var(--card); border:1px solid var(--line); border-radius:12px;
-               padding:16px; margin-bottom:16px; text-align:center; }
-  .countdown .t { font-size:34px; font-weight:800; letter-spacing:.04em; color:var(--amber); }
+         background:rgba(251,191,36,.15); color:var(--amber);
+         box-shadow:0 0 12px rgba(251,191,36,.2); vertical-align:middle; }
+  .countdown { background:var(--card); border:1px solid var(--line); border-radius:16px;
+               padding:18px 16px; margin-bottom:16px; text-align:center;
+               box-shadow:0 12px 32px rgba(0,0,0,.35); }
+  .countdown .t { font-size:36px; font-weight:800; letter-spacing:.02em;
+                  background:linear-gradient(92deg,#fde68a,#fbbf24);
+                  -webkit-background-clip:text; background-clip:text; color:transparent;
+                  filter:drop-shadow(0 0 18px rgba(251,191,36,.25));
+                  font-variant-numeric:tabular-nums; }
   .countdown .l { font-size:13px; color:var(--mut); margin-top:6px; }
   .tblwrap { overflow-x:auto; background:var(--card); border:1px solid var(--line);
-             border-radius:12px; }
+             border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.35); }
   table { width:100%; border-collapse:collapse; min-width:640px; }
   th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); font-size:14px; }
-  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+       background:rgba(255,255,255,.02); }
+  tbody tr { transition:background .15s ease; }
+  tbody tr:hover { background:rgba(96,165,250,.07); }
   tr:last-child td { border-bottom:none; }
   td.num { text-align:right; font-variant-numeric:tabular-nums; }
   .addr { font-family:ui-monospace,Menlo,monospace; font-size:12px; }
-  .meth { background:rgba(96,165,250,.08); border:1px solid #2b4a75; color:#bcd7fb;
-          border-radius:10px; padding:12px 16px; font-size:13px; margin-top:16px; }
-  .per1k { background:var(--card); border:1px solid var(--line); border-radius:12px;
-           padding:16px; margin-bottom:16px; }
+  .meth { background:rgba(96,165,250,.08); border:1px solid rgba(96,165,250,.35); color:#bcd7fb;
+          border-radius:12px; padding:12px 16px; font-size:13px; margin-top:16px; }
+  .per1k { background:var(--card); border:1px solid var(--line); border-radius:16px;
+           padding:18px; margin-bottom:16px; box-shadow:0 12px 32px rgba(0,0,0,.35); }
   .per1k h2, .tblwrap h2 { margin:0 0 10px; font-size:16px; padding:0; }
   footer { margin-top:24px; color:var(--mut); font-size:13px; }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } }
+  @keyframes fadein { from { opacity:0; } }
+  .countdown { animation:rise .55s ease backwards; }
+  .strip .stat { animation:rise .55s ease backwards; }
+  .strip .stat:nth-child(2) { animation-delay:.05s; }
+  .strip .stat:nth-child(3) { animation-delay:.1s; }
+  .strip .stat:nth-child(4) { animation-delay:.15s; }
+  .strip .stat:nth-child(5) { animation-delay:.2s; }
+  .per1k, .tblwrap { animation:rise .55s ease backwards; animation-delay:.15s; }
+  tbody tr { animation:fadein .4s ease backwards; }
+  tbody tr:nth-child(2) { animation-delay:.03s; }
+  tbody tr:nth-child(3) { animation-delay:.06s; }
+  tbody tr:nth-child(4) { animation-delay:.09s; }
+  tbody tr:nth-child(5) { animation-delay:.12s; }
+  tbody tr:nth-child(6) { animation-delay:.15s; }
+  tbody tr:nth-child(7) { animation-delay:.18s; }
+  tbody tr:nth-child(8) { animation-delay:.21s; }
+  :focus-visible { outline:2px solid rgba(96,165,250,.65); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
@@ -110,6 +160,17 @@ function tick() {
   lb.textContent = "Counting down to the end of Season 1: " + RW.season_end_label;
 }
 
+function countUp(el, end, fmt){
+  if (!el || typeof end !== "number" || !isFinite(end)) return;
+  const dur = 800, t0 = performance.now();
+  function frame(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(end * e);
+    if (p < 1) requestAnimationFrame(frame); else el.textContent = fmt(end);
+  }
+  requestAnimationFrame(frame);
+}
+
 async function init() {
   try {
     const d = await (await fetch("data.json",{cache:"no-store"})).json();
@@ -130,11 +191,20 @@ async function init() {
     <div class="stat"><div class="k">Conversion</div><div class="v">~${RW.strike_per_point} <span style="font-size:13px;color:#9aa5b4">STRIKE/point</span></div></div>
     <div class="stat"><div class="k">Total SLP equity</div><div class="v">${fmtUSD(total)}</div></div>
     <div class="stat"><div class="k">SLP depositors</div><div class="v">${RW.slp_depositor_count}</div></div>`;
+  const svs = document.querySelectorAll("#strip .stat .v");
+  countUp(svs[0], RW.points_per_day, n => String(Math.round(n)));
+  countUp(svs[1], RW.pool_strike, n => Math.round(n).toLocaleString("en-US") + " STRIKE");
+  countUp(svs[3], total, fmtUSD);
+  countUp(svs[4], RW.slp_depositor_count, n => String(Math.round(n)));
   const p1k = est(1000);
   document.getElementById("per1k").innerHTML = `
     <div class="stat"><div class="k">Est. points / $1,000</div><div class="v">${p1k.toFixed(2)}</div></div>
     <div class="stat"><div class="k">Est. STRIKE / $1,000</div><div class="v">${(p1k*RW.strike_per_point).toFixed(2)}</div></div>
     <div class="stat"><div class="k">Days left in season</div><div class="v">${daysLeft.toFixed(1)}</div></div>`;
+  const pvs = document.querySelectorAll("#per1k .stat .v");
+  countUp(pvs[0], p1k, n => n.toFixed(2));
+  countUp(pvs[1], p1k * RW.strike_per_point, n => n.toFixed(2));
+  countUp(pvs[2], daysLeft, n => n.toFixed(1));
   const deps = RW.slp_depositors.slice(0, 50);
   document.getElementById("rows").innerHTML = deps.map((x,i) => {
     const p = est(x.current_equity);

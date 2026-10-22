@@ -3,31 +3,52 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>Earn Comparison Board - EarnScope</title>
 <style>
-  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+  :root { --bg:#0b0e13; --card:rgba(21,27,38,.82); --line:rgba(148,163,184,.15);
+          --txt:#e9eef5; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt);
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  html { color-scheme:dark; scroll-behavior:smooth; }
+  body { margin:0; color:var(--txt);
+         font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+         background:
+           radial-gradient(1000px 500px at 12% -8%, rgba(52,211,153,.12), transparent 60%),
+           radial-gradient(1000px 560px at 88% -10%, rgba(96,165,250,.14), transparent 60%),
+           radial-gradient(820px 620px at 50% 115%, rgba(96,165,250,.06), transparent 60%),
+           var(--bg);
+         background-attachment:fixed; }
   .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
-  nav { margin-bottom:16px; font-size:14px; }
-  nav a { color:var(--blue); text-decoration:none; margin-right:16px; }
-  nav a:hover { text-decoration:underline; }
-  nav a.cur { color:var(--green); font-weight:700; }
-  h1 { margin:0 0 4px; font-size:26px; }
+  nav { position:sticky; top:10px; z-index:60; display:flex; gap:4px; flex-wrap:wrap;
+        padding:6px; margin-bottom:22px; border-radius:22px;
+        background:rgba(11,14,19,.78); border:1px solid var(--line);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 12px 32px rgba(0,0,0,.45); }
+  nav a { color:var(--mut); text-decoration:none; padding:8px 14px; border-radius:999px;
+          font-size:14px; font-weight:600; transition:all .18s ease; }
+  nav a:hover { color:var(--txt); background:rgba(255,255,255,.07); }
+  nav a.cur { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+              font-weight:700; box-shadow:0 4px 16px rgba(52,211,153,.35); }
+  h1 { margin:0 0 4px; font-size:28px; font-weight:800; letter-spacing:-.02em;
+       background:linear-gradient(92deg,#34d399,#60a5fa);
+       -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sub { color:var(--mut); margin:0 0 20px; }
-  .prod { background:var(--card); border:1px solid var(--line); border-radius:14px;
-          padding:20px; margin-bottom:18px; }
-  .prod h2 { margin:0 0 4px; font-size:20px; }
+  .prod { background:var(--card); border:1px solid var(--line); border-radius:16px;
+          padding:20px; margin-bottom:18px; box-shadow:0 12px 32px rgba(0,0,0,.35);
+          transition:transform .18s ease, border-color .18s ease; }
+  .prod:hover { transform:translateY(-2px); border-color:rgba(148,163,184,.3); }
+  .prod h2 { margin:0 0 4px; font-size:20px; letter-spacing:-.01em; }
   .prod .tag { color:var(--mut); font-size:14px; margin-bottom:14px; }
   .nums { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-bottom:14px; }
-  .num { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .num { background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
   .num .k { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:.05em; }
   .num .v { font-size:17px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
   .num .n { font-size:11px; color:var(--mut); }
   .pos { color:var(--green); } .neg { color:var(--red); }
-  .est { display:inline-block; font-size:10px; font-weight:800; color:#0e1116; background:var(--amber);
+  .est { display:inline-block; font-size:10px; font-weight:800; color:#0b0e13; background:var(--amber);
          border-radius:4px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
   .meth { font-size:13.5px; color:var(--mut); border-top:1px solid var(--line); padding-top:12px; margin-top:4px; }
   .meth b { color:var(--txt); }
@@ -37,19 +58,41 @@
   .tblx { overflow-x:auto; }
   .tblx table { min-width:680px; }
   th, td { padding:9px 10px; text-align:left; border-bottom:1px solid var(--line); }
-  th { color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+  th { color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em;
+       background:rgba(255,255,255,.02); }
+  tbody tr { transition:background .15s ease; }
+  tbody tr:hover { background:rgba(96,165,250,.07); }
   td.num { text-align:right; font-variant-numeric:tabular-nums; }
   .badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:700; }
-  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green); }
-  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red); }
-  .btn { display:inline-block; margin-top:10px; padding:9px 16px; border-radius:8px;
-         background:var(--blue); color:#0e1116; font-weight:700; text-decoration:none; font-size:14px; }
+  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green);
+                   box-shadow:0 0 10px rgba(52,211,153,.2); }
+  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red);
+                      box-shadow:0 0 10px rgba(248,113,113,.2); }
+  .btn { display:inline-block; margin-top:10px; padding:9px 16px; border-radius:999px;
+         background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13; font-weight:700;
+         text-decoration:none; font-size:14px; box-shadow:0 6px 20px rgba(52,211,153,.3);
+         transition:transform .15s ease, box-shadow .15s ease; }
+  .btn:hover { transform:translateY(-1px); box-shadow:0 10px 26px rgba(52,211,153,.4); }
   .steps { margin:0 0 12px; padding-left:20px; color:var(--mut); font-size:14px; }
   .steps li { margin:5px 0; }
-  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
-         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  #err { background:rgba(58,29,29,.85); border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:12px; margin-bottom:16px; display:none; }
   footer { margin-top:24px; color:var(--mut); font-size:13px; }
   .upd { color:var(--amber); font-weight:600; }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } }
+  @keyframes fadein { from { opacity:0; } }
+  .prod { animation:rise .55s ease backwards; }
+  .prod:nth-child(2) { animation-delay:.08s; }
+  .prod:nth-child(3) { animation-delay:.16s; }
+  .prod:nth-child(4) { animation-delay:.24s; }
+  tbody tr { animation:fadein .4s ease backwards; }
+  tbody tr:nth-child(2) { animation-delay:.04s; }
+  tbody tr:nth-child(3) { animation-delay:.08s; }
+  tbody tr:nth-child(4) { animation-delay:.12s; }
+  :focus-visible { outline:2px solid rgba(96,165,250,.65); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
@@ -126,6 +169,17 @@ function productCard(p){
     ${btn}</div>`;
 }
 
+function countUp(el, end, fmt){
+  if (!el || typeof end !== "number" || !isFinite(end)) return;
+  const dur = 800, t0 = performance.now();
+  function frame(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(end * e);
+    if (p < 1) requestAnimationFrame(frame); else el.textContent = fmt(end);
+  }
+  requestAnimationFrame(frame);
+}
+
 async function load(){
   try{
     const r = await fetch("data.json",{cache:"no-store"});
@@ -135,6 +189,10 @@ async function load(){
     const prods = d.compare || [];
     $("prods").innerHTML = prods.length ? prods.map(productCard).join("")
       : "<div class='prod'>Comparison board data is not available in this build yet.</div>";
+    document.querySelectorAll("#prods .num .v").forEach(el => {
+      const m = el.textContent.trim().match(/^\$([\d,]+(?:\.\d+)?)$/);
+      if (m) countUp(el, parseFloat(m[1].replace(/,/g, "")), fmtUSD);
+    });
   }catch(err){
     const box=$("err"); box.style.display="block";
     box.textContent="Failed to load data.json: "+err.message;

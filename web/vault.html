@@ -3,39 +3,61 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>EarnScope - Vault Detail</title>
 <style>
-  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+  :root { --bg:#0b0e13; --card:rgba(21,27,38,.82); --line:rgba(148,163,184,.15);
+          --txt:#e9eef5; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt);
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  html { color-scheme:dark; scroll-behavior:smooth; }
+  body { margin:0; color:var(--txt);
+         font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+         background:
+           radial-gradient(1000px 500px at 12% -8%, rgba(52,211,153,.12), transparent 60%),
+           radial-gradient(1000px 560px at 88% -10%, rgba(96,165,250,.14), transparent 60%),
+           radial-gradient(820px 620px at 50% 115%, rgba(96,165,250,.06), transparent 60%),
+           var(--bg);
+         background-attachment:fixed; }
   .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
-  .back { display:inline-block; margin-bottom:12px; color:var(--blue);
-          text-decoration:none; font-size:14px; }
-  .back:hover { text-decoration:underline; }
-  header h1 { margin:0 0 4px; font-size:24px; }
+  .back { display:inline-block; margin-bottom:14px; color:var(--txt);
+          text-decoration:none; font-size:14px; font-weight:600;
+          padding:8px 14px; border-radius:999px;
+          background:rgba(11,14,19,.78); border:1px solid var(--line);
+          backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+          box-shadow:0 8px 24px rgba(0,0,0,.4); transition:all .18s ease; }
+  .back:hover { color:var(--blue); border-color:rgba(96,165,250,.45); transform:translateY(-1px); }
+  header h1 { margin:0 0 4px; font-size:26px; font-weight:800; letter-spacing:-.02em; }
   header .sub { color:var(--mut); margin:0 0 16px; font-size:14px; }
   .badge { display:inline-block; padding:3px 10px; border-radius:999px;
            font-size:12px; font-weight:700; }
-  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green); }
-  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red); }
+  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green);
+                   box-shadow:0 0 12px rgba(52,211,153,.22); }
+  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red);
+                      box-shadow:0 0 12px rgba(248,113,113,.22); }
   .badge.proto { background:rgba(96,165,250,.15); color:var(--blue); }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
            gap:12px; margin:16px 0 20px; }
-  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
-          padding:14px 16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:14px 16px; box-shadow:0 8px 24px rgba(0,0,0,.32);
+          transition:transform .18s ease, border-color .18s ease; }
+  .strip .stat:hover { transform:translateY(-2px); border-color:rgba(148,163,184,.32); }
   .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
   .stat .v { font-size:20px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
   .stat .v.red { color:var(--red); } .stat .v.green { color:var(--green); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px;
-          padding:16px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px;
+          padding:18px; margin-bottom:20px; box-shadow:0 12px 32px rgba(0,0,0,.35); }
   .card h2 { margin:0 0 12px; font-size:16px; }
   .card .hint { color:var(--mut); font-size:13px; margin:-8px 0 12px; }
   .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-  .toolbar button { background:#0e1116; border:1px solid var(--line); color:var(--txt);
-                    border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
-  .toolbar button.on { border-color:var(--blue); color:var(--blue); font-weight:700; }
+  .toolbar button { background:rgba(255,255,255,.03); border:1px solid var(--line); color:var(--txt);
+                    border-radius:999px; padding:6px 13px; font-size:13px; cursor:pointer;
+                    font-family:inherit; transition:all .15s ease; }
+  .toolbar button:hover { border-color:rgba(148,163,184,.4); transform:translateY(-1px); }
+  .toolbar button.on { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+                       border-color:transparent; font-weight:700; }
   .legend { display:flex; flex-wrap:wrap; gap:16px; font-size:13px; color:var(--mut);
             margin-bottom:8px; }
   .legend .sw { display:inline-block; width:22px; height:3px; vertical-align:middle;
@@ -51,11 +73,26 @@
   @media (min-width:760px) { .grid2 { grid-template-columns:1fr 1fr; } }
   footer { margin-top:24px; color:var(--mut); font-size:13px; }
   footer .upd { color:var(--amber); font-weight:600; }
-  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
-         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
-  .vlist a { display:block; padding:10px 12px; border:1px solid var(--line);
-             border-radius:10px; margin-bottom:8px; color:var(--txt); text-decoration:none; }
-  .vlist a:hover { border-color:var(--blue); }
+  #err { background:rgba(58,29,29,.85); border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:12px; margin-bottom:16px; display:none; }
+  .vlist a { display:block; padding:12px 14px; border:1px solid var(--line);
+             border-radius:12px; margin-bottom:8px; color:var(--txt); text-decoration:none;
+             background:rgba(255,255,255,.02); transition:all .15s ease; }
+  .vlist a:hover { border-color:rgba(96,165,250,.5); transform:translateY(-1px);
+                   background:rgba(96,165,250,.06); }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } }
+  .strip .stat { animation:rise .55s ease backwards; }
+  .strip .stat:nth-child(2) { animation-delay:.05s; }
+  .strip .stat:nth-child(3) { animation-delay:.1s; }
+  .strip .stat:nth-child(4) { animation-delay:.15s; }
+  .strip .stat:nth-child(5) { animation-delay:.2s; }
+  .strip .stat:nth-child(6) { animation-delay:.25s; }
+  .card { animation:rise .55s ease backwards; }
+  .grid2 .card:nth-child(2) { animation-delay:.12s; }
+  :focus-visible { outline:2px solid rgba(96,165,250,.65); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
@@ -122,6 +159,7 @@ const pctCls = n => (n == null || isNaN(n)) ? "" : (n >= 0 ? "pos" : "neg");
 const fmtDate = ts => new Date(ts).toLocaleDateString("en-US",{day:"numeric",month:"short",timeZone:"Asia/Jakarta"});
 const fmtDateTime = ts => new Date(ts).toLocaleString("en-US",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"});
 
+let chartSeq = 0;
 function lineChart(seriesList, yLabel) {
   const W = 640, H = 300, padL = 64, padR = 12, padT = 10, padB = 28;
   const all = seriesList.flatMap(s => s.pts);
@@ -136,22 +174,37 @@ function lineChart(seriesList, yLabel) {
   for (let i = 0; i <= 4; i++) {
     const v = v0 + (v1 - v0) * i / 4, y = Y(v);
     const lbl = yLabel === "usd" ? ("$" + fmtNum(v, v >= 1000 ? 0 : 2)) : v.toFixed(4);
-    g += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#242c38"/>` +
+    g += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="rgba(148,163,184,.18)"/>` +
          `<text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#9aa5b4">${lbl}</text>`;
   }
   for (let i = 0; i <= 4; i++) {
     const t = t0 + (t1 - t0) * i / 4, x = X(t);
     g += `<text x="${x}" y="${H-8}" text-anchor="middle" font-size="10" fill="#9aa5b4">${fmtDate(t)}</text>`;
   }
-  let lines = "";
-  for (const s of seriesList) {
-    if (s.pts.length < 1) continue;
+  let lines = "", fills = "", defs = "";
+  seriesList.forEach((s, si) => {
+    if (s.pts.length < 1) return;
     const pts = s.pts.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
-    lines += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
-  }
+    const gid = "cg" + (chartSeq++) + "-" + si;
+    defs += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".26"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient>`;
+    const base = Y(v0).toFixed(1);
+    fills += `<polygon points="${pts} ${X(s.pts[s.pts.length-1][0]).toFixed(1)},${base} ${X(s.pts[0][0]).toFixed(1)},${base}" fill="url(#${gid})"/>`;
+    lines += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  });
   const last = seriesList.map(s => s.pts[s.pts.length-1]).filter(Boolean).pop();
   const lastLbl = last ? `<text x="${W-padR}" y="${padT+8}" text-anchor="end" font-size="11" fill="#e8edf3">${yLabel==="usd" ? fmtUSD(last[1]) : last[1].toFixed(6)} (${fmtDateTime(last[0])})</text>` : "";
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}${lines}${lastLbl}</svg>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img"><defs>${defs}</defs>${g}${fills}${lines}${lastLbl}</svg>`;
+}
+
+function countUp(el, end, fmt){
+  if (!el || typeof end !== "number" || !isFinite(end)) return;
+  const dur = 800, t0 = performance.now();
+  function frame(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(end * e);
+    if (p < 1) requestAnimationFrame(frame); else el.textContent = fmt(end);
+  }
+  requestAnimationFrame(frame);
 }
 
 let VD = null, META = null, OH = null, OUR = null, DEPT = null;
@@ -190,6 +243,10 @@ function render() {
     <div class="stat"><div class="k">Leader commission</div><div class="v">${com}</div></div>
     <div class="stat"><div class="k">Lockup</div><div class="v">${m.lockup_days == null ? "-" : m.lockup_days + " days"}</div></div>
     <div class="stat"><div class="k">Min. deposit</div><div class="v">$${m.min_deposit == null ? "-" : m.min_deposit}</div></div>`;
+  const cvs = document.querySelectorAll("#cards .stat .v");
+  countUp(cvs[0], sp, n => n.toFixed(6));
+  countUp(cvs[1], m.equity, fmtUSD);
+  countUp(cvs[2], m.depositors, n => String(Math.round(n)));
   renderMain();
   $("depchart").innerHTML = lineChart([{pts: DEPT, color: "#fbbf24"}], "n");
 

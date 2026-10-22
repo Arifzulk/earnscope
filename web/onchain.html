@@ -3,42 +3,76 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>STRIKE on-chain - EarnScope</title>
 <style>
-  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+  :root { --bg:#0b0e13; --card:rgba(21,27,38,.82); --line:rgba(148,163,184,.15);
+          --txt:#e9eef5; --mut:#9aa5b4;
           --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt);
-         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  html { color-scheme:dark; scroll-behavior:smooth; }
+  body { margin:0; color:var(--txt);
+         font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+         background:
+           radial-gradient(1000px 500px at 12% -8%, rgba(52,211,153,.12), transparent 60%),
+           radial-gradient(1000px 560px at 88% -10%, rgba(96,165,250,.14), transparent 60%),
+           radial-gradient(820px 620px at 50% 115%, rgba(96,165,250,.06), transparent 60%),
+           var(--bg);
+         background-attachment:fixed; }
   .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
-  nav { margin-bottom:16px; font-size:14px; }
-  nav a { color:var(--blue); text-decoration:none; margin-right:16px; }
-  nav a:hover { text-decoration:underline; }
-  nav a.cur { color:var(--green); font-weight:700; }
-  h1 { margin:0 0 4px; font-size:26px; }
+  nav { position:sticky; top:10px; z-index:60; display:flex; gap:4px; flex-wrap:wrap;
+        padding:6px; margin-bottom:22px; border-radius:22px;
+        background:rgba(11,14,19,.78); border:1px solid var(--line);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        box-shadow:0 12px 32px rgba(0,0,0,.45); }
+  nav a { color:var(--mut); text-decoration:none; padding:8px 14px; border-radius:999px;
+          font-size:14px; font-weight:600; transition:all .18s ease; }
+  nav a:hover { color:var(--txt); background:rgba(255,255,255,.07); }
+  nav a.cur { background:linear-gradient(135deg,#34d399,#60a5fa); color:#0b0e13;
+              font-weight:700; box-shadow:0 4px 16px rgba(52,211,153,.35); }
+  h1 { margin:0 0 4px; font-size:28px; font-weight:800; letter-spacing:-.02em;
+       background:linear-gradient(92deg,#34d399,#60a5fa);
+       -webkit-background-clip:text; background-clip:text; color:transparent; }
   .sub { color:var(--mut); margin:0 0 20px; }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:18px; }
-  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:14px 16px; box-shadow:0 8px 24px rgba(0,0,0,.32);
+          transition:transform .18s ease, border-color .18s ease; }
+  .strip .stat:hover { transform:translateY(-2px); border-color:rgba(148,163,184,.32); }
   .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
   .stat .v { font-size:26px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:18px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px;
+          padding:18px; margin-bottom:18px; box-shadow:0 12px 32px rgba(0,0,0,.35); }
   .card h2 { margin:0 0 12px; font-size:17px; }
   .conc { margin:10px 0; }
   .conc .lbl { display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px; }
   .conc .lbl b { font-variant-numeric:tabular-nums; }
-  .conc .bar { height:12px; background:#0e1116; border-radius:999px; overflow:hidden; }
-  .conc .bar > div { height:100%; border-radius:999px; background:var(--blue); }
+  .conc .bar { height:12px; background:rgba(255,255,255,.05); border-radius:999px; overflow:hidden; }
+  .conc .bar > div { height:100%; border-radius:999px; transition:width .6s ease; }
   .meth { font-size:13.5px; color:var(--mut); }
   .meth b { color:var(--txt); }
-  .warn { background:#1a1408; border:1px solid #5b4a1e; color:#fcd34d; border-radius:12px;
-          padding:14px 16px; font-size:13.5px; margin-top:14px; }
+  .warn { background:rgba(26,20,8,.85); border:1px solid rgba(251,191,36,.35); color:#fcd34d;
+          border-radius:14px; padding:14px 16px; font-size:13.5px; margin-top:14px; }
   .warn b { color:#fde68a; }
-  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
-         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  #err { background:rgba(58,29,29,.85); border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:12px; margin-bottom:16px; display:none; }
   .cap { font-size:12px; color:var(--mut); margin-top:8px; }
   footer { margin-top:24px; color:var(--mut); font-size:13px; }
   .upd { color:var(--amber); font-weight:600; }
   svg.trend { width:100%; height:160px; display:block; }
+  @keyframes rise { from { opacity:0; transform:translateY(8px); } }
+  .strip .stat { animation:rise .55s ease backwards; }
+  .strip .stat:nth-child(2) { animation-delay:.06s; }
+  .strip .stat:nth-child(3) { animation-delay:.12s; }
+  .card { animation:rise .55s ease backwards; }
+  .card:nth-of-type(2) { animation-delay:.1s; }
+  .card:nth-of-type(3) { animation-delay:.2s; }
+  :focus-visible { outline:2px solid rgba(96,165,250,.65); outline-offset:2px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.001s !important; transition-duration:.001s !important; }
+  }
 </style>
 </head>
 <body>
@@ -106,11 +140,23 @@ function trendSVG(hist){
   const up = vals[vals.length-1] >= vals[0];
   const c = up ? "#34d399" : "#f87171";
   svg.innerHTML =
-    `<line x1="0" y1="${H-P}" x2="${W}" y2="${H-P}" stroke="#242c38"/>`+
-    `<polygon points="${P},${H-P} ${pts} ${X(hist.length-1).toFixed(1)},${H-P}" fill="${c}22"/>`+
-    `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2"/>`+
+    `<defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".30"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>`+
+    `<line x1="0" y1="${H-P}" x2="${W}" y2="${H-P}" stroke="rgba(148,163,184,.25)"/>`+
+    `<polygon points="${P},${H-P} ${pts} ${X(hist.length-1).toFixed(1)},${H-P}" fill="url(#tg)"/>`+
+    `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`+
     `<text x="${P+2}" y="16" fill="#9aa5b4" font-size="11">${fmtInt(max)}</text>`+
     `<text x="${P+2}" y="${H-P-4}" fill="#9aa5b4" font-size="11">${fmtInt(min)}</text>`;
+}
+
+function countUp(el, end, fmt){
+  if (!el || typeof end !== "number" || !isFinite(end)) return;
+  const dur = 800, t0 = performance.now();
+  function frame(t){
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(end * e);
+    if (p < 1) requestAnimationFrame(frame); else el.textContent = fmt(end);
+  }
+  requestAnimationFrame(frame);
 }
 
 async function load(){
@@ -124,6 +170,9 @@ async function load(){
       <div class="stat"><div class="k">Holder count</div><div class="v">${fmtInt(o.holder_count)}</div></div>
       <div class="stat"><div class="k">Supply</div><div class="v">${fmtInt(o.supply_strike)} <span style="font-size:14px;color:#9aa5b4">STRIKE</span></div></div>
       <div class="stat"><div class="k">Daily snapshots</div><div class="v">${o.snapshot_count ?? "n/a"}</div></div>`;
+    const ovs = document.querySelectorAll("#strip .stat .v");
+    countUp(ovs[0], o.holder_count, fmtInt);
+    countUp(ovs[2], o.snapshot_count, n => String(Math.round(n)));
     trendSVG(o.history || []);
     const h = o.history || [];
     $("trendCap").textContent = h.length
