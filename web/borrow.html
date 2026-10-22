@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator Borrow to Earn - EarnScope</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
+  nav { margin-bottom:16px; font-size:14px; }
+  nav a { color:var(--blue); text-decoration:none; margin-right:16px; }
+  nav a:hover { text-decoration:underline; }
+  nav a.cur { color:var(--green); font-weight:700; }
+  h1 { margin:0 0 4px; font-size:26px; }
+  .sub { color:var(--mut); margin:0 0 20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .card h2 { margin:0 0 12px; font-size:17px; }
+  label { display:block; font-size:13px; color:var(--mut); margin:12px 0 4px; }
+  label b { color:var(--txt); }
+  input[type=number], select { width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--line); background:#0e1116; color:var(--txt); font-size:15px; }
+  input[type=range] { width:100%; }
+  .rval { font-weight:700; color:var(--blue); }
+  .steps { margin:0; padding-left:20px; color:var(--mut); font-size:14px; }
+  .steps li { margin:6px 0; }
+  .res { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:16px; }
+  .stat { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .stat .k { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:20px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  .health { margin-top:16px; padding:16px; border-radius:12px; border:1px solid var(--line); }
+  .health.aman { border-color:var(--green); background:rgba(52,211,153,.07); }
+  .health.waspada { border-color:var(--amber); background:rgba(251,191,36,.07); }
+  .health.bahaya { border-color:var(--red); background:rgba(248,113,113,.07); }
+  .health .st { font-size:22px; font-weight:800; }
+  .health.aman .st { color:var(--green); } .health.waspada .st { color:var(--amber); }
+  .health.bahaya .st { color:var(--red); }
+  .bar { height:10px; background:#0e1116; border-radius:999px; margin-top:10px; overflow:hidden; }
+  .bar > div { height:100%; border-radius:999px; }
+  .disc { margin-top:20px; background:#1a1408; border:1px solid #5b4a1e; color:#fcd34d;
+          border-radius:12px; padding:14px 16px; font-size:13.5px; }
+  .disc b { color:#fde68a; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  canvas { width:100%; height:180px; display:block; }
+  .cap { font-size:12px; color:var(--mut); margin-top:6px; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="index.html">&larr; EarnScope</a>
+    <a href="vault.html">Detail Vault</a>
+    <a href="simulator.html">Simulator Deposit</a>
+    <a href="rewards.html">Rewards Projector</a>
+    <a href="tracker.html">Position Tracker</a>
+    <a href="borrow.html" class="cur">Borrow to Earn</a>
+    <a href="compare.html">Papan Banding</a>
+    <a href="onchain.html">STRIKE on-chain</a>
+  </nav>
+  <h1>Simulator Borrow to Earn</h1>
+  <p class="sub">Skema resmi Strike: kunci jaminan (mis. ADA), terima kredit USD <b>bunga 0%</b>, kredit wajib masuk vault SLP. Simulator ini memakai data asli: harga ADA live dari API pasar Strike dan kinerja SLP historis dari tracker EarnScope.</p>
+  <div id="err"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. Mekanisme</h2>
+      <ol class="steps">
+        <li>Kunci jaminan, mis. ADA senilai <b>C</b> USD.</li>
+        <li>Tarik kredit USD sebesar <b>% draw</b> dari C, bunga 0%.</li>
+        <li>Kredit <b>wajib</b> disalurkan ke vault Strike Liquidity Provider (SLP).</li>
+        <li>Hasil bersih = nilai kredit di SLP pada akhir horizon &minus; pokok kredit.</li>
+        <li>Kesehatan line = ekuitas jaminan akhir &divide; pokok kredit.</li>
+      </ol>
+      <p class="cap">Strike tidak mempublikasikan batas draw maksimum resmi; 50% dipakai sebagai contoh umum.</p>
+    </div>
+    <div class="card">
+      <h2>2. Input Anda</h2>
+      <label>Nilai jaminan ADA (USD)</label>
+      <input type="number" id="inCollateral" value="10000" min="100" step="100">
+      <label>% draw kredit (bunga 0%) &nbsp;<span class="rval" id="drawVal">50%</span></label>
+      <input type="range" id="inDraw" min="10" max="100" value="50" step="5">
+      <label>Horizon proyeksi</label>
+      <select id="inHorizon">
+        <option value="30">30 hari</option>
+        <option value="90" selected>90 hari</option>
+        <option value="180">180 hari</option>
+        <option value="365">1 tahun</option>
+      </select>
+      <label>Skenario kinerja SLP (dari data historis asli)</label>
+      <select id="inScenario"></select>
+      <label>Asumsi gerak harga ADA selama horizon &nbsp;<span class="rval" id="adaVal">+0%</span></label>
+      <input type="range" id="inAda" min="-80" max="300" value="0" step="5">
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2>3. Hasil simulasi</h2>
+    <div id="priceLine" class="cap" style="margin-bottom:8px"></div>
+    <div class="res" id="results"></div>
+    <div class="health" id="healthBox"></div>
+    <canvas id="chart"></canvas>
+    <div class="cap" id="chartCap"></div>
+  </div>
+
+  <div class="disc">
+    <b>Disclaimer.</b> Ini simulasi dari data masa lalu, bukan janji hasil. Kinerja SLP historis
+    tidak menjamin kinerja mendatang; harga ADA bisa bergerak berlawanan asumsi dan menggerus
+    kesehatan line. Threshold kesehatan di bawah adalah asumsi EarnScope karena Strike tidak
+    mempublikasikan rasio likuidasi resmi. Bukan nasihat keuangan.
+  </div>
+
+  <footer>Sumber: API publik Strike (api.strikefinance.org), tanpa auth &middot; Dibangun untuk Strike 48h Hackathon</footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const fmtUSD = n => n == null || !isFinite(n) ? "n/a" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtPct = (n,d=2) => n == null || !isFinite(n) ? "n/a" : (n >= 0 ? "+" : "") + (n*100).toFixed(d) + "%";
+const DAY = 86400000;
+
+function wib(ms){
+  try { return new Date(ms).toLocaleString("id-ID",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}); }
+  catch(e){ return ""; }
+}
+
+// return tahunan dari return jendela r selama days hari
+function ann(r, days){ return (days > 0 && isFinite(r)) ? Math.pow(1 + r, 365/days) - 1 : null; }
+
+function buildScenarios(series){
+  // series: [[ts, sp], ...] terurut
+  const out = [];
+  if (!series || series.length < 2) return out;
+  const n = series.length;
+  const t0 = series[0][0], t1 = series[n-1][0];
+  const spanDays = (t1 - t0) / DAY;
+  const rFull = series[n-1][1] / series[0][1] - 1;
+  out.push({key:"tracker", label:"Sejak tracker", ann:ann(rFull, spanDays), days:spanDays,
+            note:"seluruh rentang data tracker"});
+
+  for (const w of [7, 30]){
+    const cut = t1 - w*DAY;
+    let i = 0; while (i < n && series[i][0] < cut) i++;
+    if (i >= n-1) i = 0; // data lebih pendek dari jendela: pakai semua
+    const d = (t1 - series[i][0]) / DAY;
+    const r = series[n-1][1] / series[i][1] - 1;
+    out.push({key:"w"+w, label:w+" hari terakhir", ann:ann(r,d), days:d,
+              note:"data tersedia "+d.toFixed(1)+" hari"});
+  }
+
+  // bull/bear: rolling window 24 jam (atau span penuh bila data lebih pendek)
+  const win = Math.min(DAY, t1 - t0);
+  let best = -Infinity, worst = Infinity, bi=0, wi=0, bj=1, wj=1;
+  for (let i=0;i<n;i++){
+    let j=i+1;
+    while (j<n && series[j][0]-series[i][0] < win) j++;
+    if (j>=n) j=n-1;
+    if (j<=i) continue;
+    const r = series[j][1]/series[i][1]-1;
+    if (r>best){best=r;bi=i;bj=j;} if (r<worst){worst=r;wi=i;wj=j;}
+  }
+  const winDays = win/DAY;
+  const lbl = winDays >= 1 ? "24 jam" : "rentang data";
+  out.push({key:"bull", label:"Bull ("+lbl+" terbaik, diannualisasi)", ann:ann(best,winDays),
+            days:winDays, note:"dari histori"});
+  out.push({key:"bear", label:"Bear ("+lbl+" terburuk, diannualisasi)", ann:ann(worst,winDays),
+            days:winDays, note:"dari histori"});
+  return out;
+}
+
+function drawChart(series){
+  const c = $("chart"), ctx = c.getContext("2d");
+  const W = c.clientWidth, H = c.clientHeight, dpr = window.devicePixelRatio||1;
+  c.width = W*dpr; c.height = H*dpr; ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  if (!series || series.length < 2){ ctx.fillStyle="#9aa5b4"; ctx.fillText("Data seri SLP belum tersedia.", 10, 20); return; }
+  const vals = series.map(p=>p[1]);
+  const min = Math.min(...vals), max = Math.max(...vals), rng = (max-min)||1;
+  const X = i => 8 + i/(series.length-1)*(W-16);
+  const Y = v => H-14 - (v-min)/rng*(H-28);
+  ctx.strokeStyle = "#242c38"; ctx.beginPath(); ctx.moveTo(0,H-14); ctx.lineTo(W,H-14); ctx.stroke();
+  const up = vals[vals.length-1] >= vals[0];
+  ctx.strokeStyle = up ? "#34d399" : "#f87171"; ctx.lineWidth = 2; ctx.beginPath();
+  series.forEach((p,i)=>{ i?ctx.lineTo(X(i),Y(p[1])):ctx.moveTo(X(i),Y(p[1])); });
+  ctx.stroke();
+  ctx.fillStyle = "#9aa5b4"; ctx.font = "11px sans-serif";
+  ctx.fillText(max.toFixed(4), 10, 14); ctx.fillText(min.toFixed(4), 10, H-18);
+}
+
+let SCEN = [];
+async function load(){
+  try{
+    const r = await fetch("data.json",{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d = await r.json();
+    const B = d.borrow || {};
+    const series = B.slp_series || [];
+    SCEN = buildScenarios(series);
+    const sel = $("inScenario");
+    sel.innerHTML = SCEN.map((s,i)=>`<option value="${i}">${s.label} (${s.note}) : ${s.ann==null?"n/a":((s.ann>=0?"+":"")+(s.ann*100).toFixed(1)+"%/thn")}</option>`).join("");
+    if(!SCEN.length) sel.innerHTML = "<option>Data SLP belum tersedia</option>";
+
+    const priceTxt = B.last_ok && B.ada_usd
+      ? `Harga ADA-USD live: <b style="color:#e8edf3">${fmtUSD(B.ada_usd)}</b> (${B.ada_usd_ts_wib||""}, sumber: API pasar Strike)`
+      : `Harga ADA live tidak tersedia pada build terakhir${B.fetch_error?(" ("+B.fetch_error+")"):""}. Simulator tetap jalan; hasil memakai asumsi gerak harga Anda dari nilai jaminan.`;
+    $("priceLine").innerHTML = priceTxt;
+    drawChart(series);
+    $("chartCap").textContent = "Share price SLP dari snapshot tracker EarnScope ("+
+      (series.length? wib(series[0][0])+" s/d "+wib(series[series.length-1][0]) : "belum ada data")+
+      "). Kinerja tahunan skenario dihitung dari jendela data yang tersedia.";
+    ["inCollateral","inDraw","inHorizon","inScenario","inAda"].forEach(id=>$(id).addEventListener("input", calc));
+    calc();
+  }catch(err){
+    const box=$("err"); box.style.display="block";
+    box.textContent="Gagal memuat data.json: "+err.message;
+  }
+}
+
+function calc(){
+  const C = Math.max(0, parseFloat($("inCollateral").value)||0);
+  const drawPct = parseFloat($("inDraw").value)||0;
+  $("drawVal").textContent = drawPct+"%";
+  const adaMove = parseFloat($("inAda").value)||0;
+  $("adaVal").textContent = (adaMove>=0?"+":"")+adaMove+"%";
+  const horizonDays = parseFloat($("inHorizon").value)||90;
+  const sc = SCEN[parseInt($("inScenario").value||"0",10)] || null;
+  const annR = sc ? sc.ann : null;
+
+  const principal = C * drawPct/100;
+  const factor = (annR==null) ? null : Math.pow(1+annR, horizonDays/365);
+  const creditEnd = factor==null ? null : principal*factor;
+  const netCredit = creditEnd==null ? null : creditEnd - principal; // bunga 0%
+  const collEnd = C * (1 + adaMove/100);
+  const netTotal = (netCredit==null) ? null : netCredit + (collEnd - C);
+  const ratio = principal>0 ? collEnd/principal : null;
+
+  const row = (k,v,cls="")=>`<div class="stat"><div class="k">${k}</div><div class="v ${cls}">${v}</div></div>`;
+  $("results").innerHTML =
+    row("Kredit diterima (pokok, bunga 0%)", fmtUSD(principal)) +
+    row("Skenario SLP", sc ? `${sc.label}<br><span style="font-size:14px;color:#9aa5b4">${fmtPct(annR)}/thn</span>` : "n/a") +
+    row("Nilai kredit di SLP, akhir "+horizonDays+" hari", fmtUSD(creditEnd)) +
+    row("Hasil bersih dari kredit", fmtUSD(netCredit), netCredit==null?"":(netCredit>=0?"pos":"neg")) +
+    row("Ekuitas jaminan akhir", fmtUSD(collEnd)) +
+    row("Total bersih vs awal", fmtUSD(netTotal), netTotal==null?"":(netTotal>=0?"pos":"neg"));
+
+  const hb = $("healthBox");
+  if (ratio==null){
+    hb.className="health"; hb.innerHTML="<div class='st'>n/a</div><div>Data belum cukup untuk menilai kesehatan line.</div>";
+    return;
+  }
+  let status, cls;
+  if (ratio >= 2.0){ status="AMAN"; cls="aman"; }
+  else if (ratio >= 1.5){ status="WASPADA"; cls="waspada"; }
+  else { status="BAHAYA"; cls="bahaya"; }
+  const barW = Math.min(100, ratio/3*100);
+  const barC = cls==="aman"?"#34d399":(cls==="waspada"?"#fbbf24":"#f87171");
+  hb.className = "health "+cls;
+  hb.innerHTML =
+    `<div class="st">${status}</div>
+     <div style="margin-top:6px">Rasio jaminan/kredit: <b>${ratio.toFixed(2)}x</b>
+     (ekuitas jaminan akhir ${fmtUSD(collEnd)} &divide; pokok kredit ${fmtUSD(principal)})</div>
+     <div class="bar"><div style="width:${barW.toFixed(1)}%;background:${barC}"></div></div>
+     <div class="cap">Threshold EarnScope: &ge;2.0x Aman &middot; 1.5&ndash;2.0x Waspada &middot; &lt;1.5x Bahaya.
+     Strike tidak mempublikasikan rasio likuidasi resmi, jadi ini asumsi kehati-hatian, bukan aturan platform.</div>`;
+}
+
+load();
+</script>
+</body>
+</html>

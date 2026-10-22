@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rewards Projector - EarnScope</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  nav a { color:var(--txt); text-decoration:none; border:1px solid var(--line);
+           background:var(--card); padding:8px 14px; border-radius:999px; font-size:14px; }
+  nav a.active { border-color:var(--blue); color:var(--blue); }
+  header h1 { margin:0 0 4px; font-size:26px; }
+  header h1 .scope { color:var(--blue); }
+  header p { margin:0 0 16px; color:var(--mut); font-size:14px; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+           gap:12px; margin-bottom:16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
+          padding:14px 16px; }
+  .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:22px; font-weight:700; margin-top:4px; }
+  .est { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;
+         background:rgba(251,191,36,.15); color:var(--amber); }
+  .countdown { background:var(--card); border:1px solid var(--line); border-radius:12px;
+               padding:16px; margin-bottom:16px; text-align:center; }
+  .countdown .t { font-size:34px; font-weight:800; letter-spacing:.04em; color:var(--amber); }
+  .countdown .l { font-size:13px; color:var(--mut); margin-top:6px; }
+  .tblwrap { overflow-x:auto; background:var(--card); border:1px solid var(--line);
+             border-radius:12px; }
+  table { width:100%; border-collapse:collapse; min-width:640px; }
+  th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); font-size:14px; }
+  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  tr:last-child td { border-bottom:none; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .addr { font-family:ui-monospace,Menlo,monospace; font-size:12px; }
+  .meth { background:rgba(96,165,250,.08); border:1px solid #2b4a75; color:#bcd7fb;
+          border-radius:10px; padding:12px 16px; font-size:13px; margin-top:16px; }
+  .per1k { background:var(--card); border:1px solid var(--line); border-radius:12px;
+           padding:16px; margin-bottom:16px; }
+  .per1k h2, .tblwrap h2 { margin:0 0 10px; font-size:16px; padding:0; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="index.html">EarnScope</a>
+    <a href="vault.html">Detail Vault</a>
+    <a href="simulator.html">Simulator Deposit</a>
+    <a href="rewards.html" class="active">Rewards Projector</a>
+    <a href="tracker.html">Position Tracker</a>
+    <a href="borrow.html">Borrow to Earn</a>
+    <a href="compare.html">Papan Banding</a>
+    <a href="onchain.html">STRIKE on-chain</a>
+  </nav>
+  <header>
+    <h1>Rewards <span class="scope">Projector</span> <span class="est">ESTIMASI</span></h1>
+    <p>Proyeksi Strike Rewards / Points Season 1 untuk para depositor Strike Liquidity Provider (SLP), direkonstruksi dari data publik.</p>
+  </header>
+  <div id="err"></div>
+  <div class="countdown">
+    <div class="t" id="cd">--:--:--:--</div>
+    <div class="l" id="cdlabel">Menghitung mundur ke akhir Season 1</div>
+  </div>
+  <div class="strip" id="strip"></div>
+  <div class="per1k">
+    <h2>Angka per $1.000 deposit <span class="est">ESTIMASI</span></h2>
+    <div class="strip" id="per1k" style="margin-bottom:0"></div>
+  </div>
+  <div class="tblwrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Depositor</th>
+        <th style="text-align:right">Ekuitas (USD)</th>
+        <th style="text-align:right">Share</th>
+        <th style="text-align:right">Est. poin (sisa season)</th>
+        <th style="text-align:right">Est. STRIKE</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="meth" id="meth"></div>
+  <footer>Sumber: API publik Strike (api.strikefinance.org), tanpa auth · Dibangun untuk Strike 48h Hackathon</footer>
+</div>
+<script>
+const fmtUSD = n => "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const shortAddr = a => a && a.length > 16 ? a.slice(0,10) + "..." + a.slice(-6) : a;
+let RW = null;
+
+function tick() {
+  const now = Date.now();
+  const left = RW.season_end_ms - now;
+  const el = document.getElementById("cd"), lb = document.getElementById("cdlabel");
+  if (left <= 0) {
+    el.textContent = "SELESAI";
+    lb.textContent = "Season 1 telah berakhir (" + RW.season_end_label + ")";
+    return;
+  }
+  const d = Math.floor(left/86400000), h = Math.floor(left%86400000/3600000),
+        m = Math.floor(left%3600000/60000), s = Math.floor(left%60000/1000);
+  el.textContent = d + " hari " + String(h).padStart(2,"0") + ":" +
+                   String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+  lb.textContent = "Menghitung mundur ke akhir Season 1: " + RW.season_end_label;
+}
+
+async function init() {
+  try {
+    const d = await (await fetch("data.json",{cache:"no-store"})).json();
+    if (!d.rewards || !d.rewards.slp_depositors) throw new Error("bagian rewards belum tersedia di data.json");
+    RW = d.rewards;
+  } catch(e) {
+    const el = document.getElementById("err");
+    el.style.display = "block";
+    el.textContent = "Gagal memuat data: " + e.message;
+    return;
+  }
+  const daysLeft = Math.max(0, (RW.season_end_ms - Date.now()) / 86400000);
+  const total = RW.slp_total_equity || 1;
+  const est = eq => RW.points_per_day * daysLeft * eq / total;
+  document.getElementById("strip").innerHTML = `
+    <div class="stat"><div class="k">Poin per hari</div><div class="v">${RW.points_per_day}</div></div>
+    <div class="stat"><div class="k">Pool hadiah</div><div class="v">${RW.pool_strike.toLocaleString("en-US")} STRIKE</div></div>
+    <div class="stat"><div class="k">Konversi</div><div class="v">~${RW.strike_per_point} <span style="font-size:13px;color:#9aa5b4">STRIKE/poin</span></div></div>
+    <div class="stat"><div class="k">Total ekuitas SLP</div><div class="v">${fmtUSD(total)}</div></div>
+    <div class="stat"><div class="k">Depositor SLP</div><div class="v">${RW.slp_depositor_count}</div></div>`;
+  const p1k = est(1000);
+  document.getElementById("per1k").innerHTML = `
+    <div class="stat"><div class="k">Est. poin / $1.000</div><div class="v">${p1k.toFixed(2)}</div></div>
+    <div class="stat"><div class="k">Est. STRIKE / $1.000</div><div class="v">${(p1k*RW.strike_per_point).toFixed(2)}</div></div>
+    <div class="stat"><div class="k">Sisa hari season</div><div class="v">${daysLeft.toFixed(1)}</div></div>`;
+  const deps = RW.slp_depositors.slice(0, 50);
+  document.getElementById("rows").innerHTML = deps.map((x,i) => {
+    const p = est(x.current_equity);
+    return `<tr><td>${i+1}</td>
+      <td class="addr" title="${x.address}">${shortAddr(x.address)}</td>
+      <td class="num">${fmtUSD(x.current_equity)}</td>
+      <td class="num">${x.share_pct.toFixed(2)}%</td>
+      <td class="num">${p.toFixed(2)}</td>
+      <td class="num">${(p*RW.strike_per_point).toFixed(2)}</td></tr>`;
+  }).join("");
+  document.getElementById("meth").innerHTML = "<b>Catatan metodologi:</b> " + RW.methodology_note;
+  tick();
+  setInterval(tick, 1000);
+}
+init();
+</script>
+</body>
+</html>

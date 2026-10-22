@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EarnScope: Transparansi Earn Strike Finance</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 18px; }
+  nav a { color:var(--txt); text-decoration:none; border:1px solid var(--line);
+           background:var(--card); padding:8px 14px; border-radius:999px; font-size:14px; }
+  nav a.active { border-color:var(--blue); color:var(--blue); }
+  header h1 { margin:0 0 4px; font-size:28px; }
+  header h1 .scope { color:var(--blue); }
+  header p { margin:0 0 16px; color:var(--mut); }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+           gap:12px; margin-bottom:20px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
+          padding:14px 16px; }
+  .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:24px; font-weight:700; margin-top:4px; }
+  .stat .v.red { color:var(--red); } .stat .v.green { color:var(--green); }
+  .tblwrap { overflow-x:auto; border:1px solid var(--line); border-radius:12px;
+             background:var(--card); }
+  table { width:100%; border-collapse:collapse; min-width:760px; }
+  th, td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); }
+  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  tr:last-child td { border-bottom:none; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px;
+           font-size:12px; font-weight:700; }
+  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green); }
+  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red); }
+  .badge.proto { background:rgba(96,165,250,.15); color:var(--blue); }
+  .vlink { color:var(--txt); text-decoration:none; }
+  .vlink:hover { color:var(--blue); }
+  .vlink .go { color:var(--blue); font-size:12px; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  .spark { height:32px; width:120px; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+  footer .upd { color:var(--amber); font-weight:600; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  .events { margin-top:20px; background:var(--card); border:1px solid var(--line);
+            border-radius:12px; padding:14px 16px; }
+  .events h2 { margin:0 0 8px; font-size:16px; }
+  .events li { margin:6px 0; color:var(--mut); font-size:14px; }
+  .events li b { color:var(--txt); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Earn<span class="scope">Scope</span></h1>
+    <p>Hub transparansi independen untuk seluruh menu Earn di Strike Finance, diukur dari data asli, bukan klaim APR.</p>
+    <nav>
+      <a href="index.html" class="active">Leaderboard</a>
+      <a href="vault.html">Detail Vault</a>
+      <a href="simulator.html">Simulator Deposit</a>
+      <a href="rewards.html">Rewards Projector</a>
+      <a href="tracker.html">Position Tracker</a>
+      <a href="borrow.html">Borrow to Earn</a>
+      <a href="compare.html">Papan Banding</a>
+      <a href="onchain.html">STRIKE on-chain</a>
+    </nav>
+  </header>
+  <div id="err"></div>
+  <div class="strip" id="strip"></div>
+  <div class="tblwrap">
+  <table>
+    <thead><tr>
+      <th>#</th><th>Vault</th><th>Risiko</th>
+      <th style="text-align:right">Share price</th>
+      <th style="text-align:right">Kinerja vs 1.0</th>
+      <th style="text-align:right">Equity (USD)</th>
+      <th style="text-align:right">Depositor</th>
+      <th style="text-align:right">Komisi</th>
+      <th>Tren</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  </div>
+  <div class="events"><h2>Log peristiwa</h2><ul id="evlog"></ul></div>
+  <footer>
+    <div>Terakhir diperbarui: <span class="upd" id="upd">-</span> · auto-refresh tiap 5 menit</div>
+    <div id="notes" style="margin-top:8px"></div>
+    <div style="margin-top:8px">Sumber: API publik Strike (api.strikefinance.org), tanpa auth · Dibangun untuk Strike 48h Hackathon</div>
+  </footer>
+</div>
+<script>
+const fmtUSD = n => n == null ? "-" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtPct = n => n == null ? "-" : (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+const pctCls = n => n == null ? "" : (n >= 0 ? "pos" : "neg");
+
+function sparkSVG(data) {
+  if (!data || data.length < 2) return "";
+  const w = 120, h = 32, min = Math.min(...data), max = Math.max(...data);
+  const rng = (max - min) || 1;
+  const pts = data.map((v,i) => `${(i/(data.length-1)*w).toFixed(1)},${(h-3-(v-min)/rng*(h-6)).toFixed(1)}`).join(" ");
+  const up = data[data.length-1] >= data[0];
+  const c = up ? "#34d399" : "#f87171";
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2"/></svg>`;
+}
+
+function badge(label, type) {
+  const lbl = label === "Underwater" ? "Underwater" : (label === "Healthy" ? "Healthy" : label);
+  const t = type === "protocol" ? ' <span class="badge proto">Protocol</span>' : "";
+  return `<span class="badge ${label === "Underwater" ? "underwater" : "healthy"}">${lbl}</span>${t}`;
+}
+
+async function load() {
+  try {
+    const r = await fetch("data.json", {cache:"no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    document.getElementById("upd").textContent = d.generated_at_wib || "-";
+    document.getElementById("notes").textContent = d.notes || "";
+    const e = d.ecosystem;
+    document.getElementById("strip").innerHTML = `
+      <div class="stat"><div class="k">Total equity vault</div><div class="v">${fmtUSD(e.total_equity)}</div></div>
+      <div class="stat"><div class="k">Jumlah depositor</div><div class="v">${e.total_depositors}</div></div>
+      <div class="stat"><div class="k">Vault underwater</div><div class="v red">${e.underwater_count} / ${e.vault_count}</div></div>
+      <div class="stat"><div class="k">Vault healthy</div><div class="v green">${e.healthy_count}</div></div>`;
+    // Petakan nama vault -> id detail (dipakai link ke vault.html?id=...)
+    const idByName = {};
+    Object.entries(d.vault_detail || {}).forEach(([vid, det]) => {
+      const nm = det && det.meta && det.meta.name;
+      if (nm) idByName[nm] = vid;
+    });
+    document.getElementById("rows").innerHTML = d.vaults.map((v,i) => {
+      const did = idByName[v.name];
+      const nameCell = did
+        ? `<a class="vlink" href="vault.html?id=${encodeURIComponent(did)}"><b>${v.name}</b> <span class="go">&rarr;</span></a>`
+        : `<b>${v.name}</b>`;
+      return `
+      <tr><td>${i+1}</td>
+        <td>${nameCell}<br><span style="color:#9aa5b4;font-size:12px">${v.type === "protocol" ? "Vault resmi Strike" : "Vault pengguna"} · lockup ${v.lockup_days} hari · min $${v.min_deposit}</span></td>
+        <td>${badge(v.risk_label, v.type)}</td>
+        <td class="num">${v.share_price == null ? "-" : v.share_price.toFixed(6)}</td>
+        <td class="num ${pctCls(v.perf_vs_1_pct)}">${fmtPct(v.perf_vs_1_pct)}</td>
+        <td class="num">${fmtUSD(v.equity)}</td>
+        <td class="num">${v.depositors}</td>
+        <td class="num">${(v.leader_commission_bps/100).toFixed(v.leader_commission_bps % 100 ? 2 : 0)}%</td>
+        <td>${sparkSVG(v.sparkline)}</td>
+      </tr>`;}).join("");
+    const ev = (d.events || []).slice(0, 8);
+    document.getElementById("evlog").innerHTML = ev.length
+      ? ev.map(x => `<li><b>${x.kind}</b> - ${x.detail}</li>`).join("")
+      : "<li>Belum ada peristiwa tercatat.</li>";
+  } catch (err) {
+    const box = document.getElementById("err");
+    box.style.display = "block";
+    box.textContent = "Gagal memuat data.json: " + err.message;
+  }
+}
+load();
+setInterval(() => location.reload(), 5 * 60 * 1000);
+</script>
+</body>
+</html>

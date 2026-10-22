@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EarnScope - Detail Vault</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
+  .back { display:inline-block; margin-bottom:12px; color:var(--blue);
+          text-decoration:none; font-size:14px; }
+  .back:hover { text-decoration:underline; }
+  header h1 { margin:0 0 4px; font-size:24px; }
+  header .sub { color:var(--mut); margin:0 0 16px; font-size:14px; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px;
+           font-size:12px; font-weight:700; }
+  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green); }
+  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red); }
+  .badge.proto { background:rgba(96,165,250,.15); color:var(--blue); }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+           gap:12px; margin:16px 0 20px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px;
+          padding:14px 16px; }
+  .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:20px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .stat .v.red { color:var(--red); } .stat .v.green { color:var(--green); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px;
+          padding:16px; margin-bottom:20px; }
+  .card h2 { margin:0 0 12px; font-size:16px; }
+  .card .hint { color:var(--mut); font-size:13px; margin:-8px 0 12px; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .toolbar button { background:#0e1116; border:1px solid var(--line); color:var(--txt);
+                    border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
+  .toolbar button.on { border-color:var(--blue); color:var(--blue); font-weight:700; }
+  .legend { display:flex; flex-wrap:wrap; gap:16px; font-size:13px; color:var(--mut);
+            margin-bottom:8px; }
+  .legend .sw { display:inline-block; width:22px; height:3px; vertical-align:middle;
+                margin-right:6px; border-radius:2px; }
+  svg.chart { width:100%; height:auto; display:block; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); }
+  th { color:var(--mut); font-size:12px; text-transform:uppercase; letter-spacing:.05em; width:45%; }
+  tr:last-child td, tr:last-child th { border-bottom:none; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  .grid2 { display:grid; grid-template-columns:1fr; gap:20px; }
+  @media (min-width:760px) { .grid2 { grid-template-columns:1fr 1fr; } }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+  footer .upd { color:var(--amber); font-weight:600; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  .vlist a { display:block; padding:10px 12px; border:1px solid var(--line);
+             border-radius:10px; margin-bottom:8px; color:var(--txt); text-decoration:none; }
+  .vlist a:hover { border-color:var(--blue); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">&larr; Kembali ke leaderboard</a>
+  <div id="err"></div>
+  <div id="content" style="display:none">
+    <header>
+      <h1 id="vname">-</h1>
+      <p class="sub"><span id="vbadges"></span><br><span id="vsub"></span></p>
+    </header>
+
+    <div class="strip" id="cards"></div>
+
+    <div class="card">
+      <h2>Grafik share price</h2>
+      <div class="hint">Biru: history resmi Strike (sejak inception) &middot; Hijau: snapshot live EarnScope (tiap &plusmn;5 menit)</div>
+      <div class="toolbar" id="rangebar">
+        <button data-range="all" class="on">Semua</button>
+        <button data-range="30">30 hari</button>
+        <button data-range="7">7 hari</button>
+        <span style="width:12px"></span>
+        <button data-metric="sp" class="on">Share price</button>
+        <button data-metric="tvl">TVL (USD)</button>
+      </div>
+      <div class="legend">
+        <span><span class="sw" style="background:#60a5fa"></span>History resmi Strike</span>
+        <span><span class="sw" style="background:#34d399"></span>Snapshot EarnScope (live)</span>
+      </div>
+      <div id="mainchart"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Ringkasan portfolio (resmi)</h2>
+        <div class="hint" id="port-ts"></div>
+        <table><tbody id="port"></tbody></table>
+      </div>
+      <div class="card">
+        <h2>Tren jumlah depositor</h2>
+        <div class="hint">Dari snapshot API depositors tiap siklus collector</div>
+        <div id="depchart"></div>
+      </div>
+    </div>
+
+    <footer>
+      <div>Data: <span class="upd" id="upd">-</span></div>
+      <div id="note" style="margin-top:8px"></div>
+      <div style="margin-top:8px">Label risiko: Healthy bila share price &ge; 1,0, Underwater bila &lt; 1,0. Bukan saran investasi; angka dihitung dari data publik apa adanya.</div>
+    </footer>
+  </div>
+  <div id="picker" class="card" style="display:none">
+    <h2>Pilih vault</h2>
+    <div class="vlist" id="vlist"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmtUSD = n => (n == null || isNaN(n)) ? "-" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtNum = (n,d=2) => (n == null || isNaN(n)) ? "-" : Number(n).toLocaleString("en-US",{maximumFractionDigits:d});
+const fmtPct = n => (n == null || isNaN(n)) ? "-" : (n >= 0 ? "+" : "") + Number(n).toFixed(2) + "%";
+const pctCls = n => (n == null || isNaN(n)) ? "" : (n >= 0 ? "pos" : "neg");
+const fmtDate = ts => new Date(ts).toLocaleDateString("id-ID",{day:"numeric",month:"short",timeZone:"Asia/Jakarta"});
+const fmtDateTime = ts => new Date(ts).toLocaleString("id-ID",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit",timeZone:"Asia/Jakarta"});
+
+function lineChart(seriesList, yLabel) {
+  const W = 640, H = 300, padL = 64, padR = 12, padT = 10, padB = 28;
+  const all = seriesList.flatMap(s => s.pts);
+  if (!all.length) return "<p style='color:#9aa5b4'>Belum ada data.</p>";
+  let t0 = Math.min(...all.map(p=>p[0])), t1 = Math.max(...all.map(p=>p[0]));
+  let v0 = Math.min(...all.map(p=>p[1])), v1 = Math.max(...all.map(p=>p[1]));
+  if (t1 === t0) t1 = t0 + 1;
+  if (v1 === v0) { v1 = v0 * 1.01 || 1; v0 = v0 * 0.99 || 0; }
+  const X = t => padL + (t - t0) / (t1 - t0) * (W - padL - padR);
+  const Y = v => padT + (1 - (v - v0) / (v1 - v0)) * (H - padT - padB);
+  let g = "";
+  for (let i = 0; i <= 4; i++) {
+    const v = v0 + (v1 - v0) * i / 4, y = Y(v);
+    const lbl = yLabel === "usd" ? ("$" + fmtNum(v, v >= 1000 ? 0 : 2)) : v.toFixed(4);
+    g += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#242c38"/>` +
+         `<text x="${padL-6}" y="${y+4}" text-anchor="end" font-size="10" fill="#9aa5b4">${lbl}</text>`;
+  }
+  for (let i = 0; i <= 4; i++) {
+    const t = t0 + (t1 - t0) * i / 4, x = X(t);
+    g += `<text x="${x}" y="${H-8}" text-anchor="middle" font-size="10" fill="#9aa5b4">${fmtDate(t)}</text>`;
+  }
+  let lines = "";
+  for (const s of seriesList) {
+    if (s.pts.length < 1) continue;
+    const pts = s.pts.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+    lines += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+  }
+  const last = seriesList.map(s => s.pts[s.pts.length-1]).filter(Boolean).pop();
+  const lastLbl = last ? `<text x="${W-padR}" y="${padT+8}" text-anchor="end" font-size="11" fill="#e8edf3">${yLabel==="usd" ? fmtUSD(last[1]) : last[1].toFixed(6)} (${fmtDateTime(last[0])})</text>` : "";
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${g}${lines}${lastLbl}</svg>`;
+}
+
+let VD = null, META = null, OH = null, OUR = null, DEPT = null;
+let curRange = "all", curMetric = "sp";
+
+function filtered(pts) {
+  if (curRange === "all" || !pts.length) return pts;
+  const cut = Date.now() - Number(curRange) * 86400e3;
+  return pts.filter(p => p[0] >= cut);
+}
+
+function renderMain() {
+  const official = curMetric === "sp" ? (OH.share_price || []) : (OH.tvl || []);
+  const ours = curMetric === "sp" ? (OUR || []) : [];
+  $("mainchart").innerHTML = lineChart([
+    {pts: filtered(official), color: "#60a5fa"},
+    {pts: filtered(ours), color: "#34d399"},
+  ], curMetric === "sp" ? "sp" : "usd");
+}
+
+function render() {
+  const m = META;
+  document.title = "EarnScope - " + (m.name || "Detail Vault");
+  $("vname").textContent = m.name || "-";
+  const badgeCls = m.risk_label === "Underwater" ? "underwater" : "healthy";
+  const proto = m.type === "protocol" ? ' <span class="badge proto">Protocol</span>' : "";
+  $("vbadges").innerHTML = `<span class="badge ${badgeCls}">${m.risk_label}</span>${proto}`;
+  const leader = m.nickname ? m.nickname : (m.type === "protocol" ? "Strike (resmi)" : m.leader_account_id || "-");
+  $("vsub").textContent = `Leader: ${leader} · Sejak inception: ${fmtDate((VD.portfolio||{}).created_at) }`;
+  const com = m.leader_commission_pct == null ? "-" : m.leader_commission_pct.toFixed(m.leader_commission_bps % 100 ? 2 : 0) + "%";
+  const sp = m.share_price;
+  $("cards").innerHTML = `
+    <div class="stat"><div class="k">Share price</div><div class="v ${sp != null && sp < 1 ? "red" : "green"}">${sp == null ? "-" : sp.toFixed(6)}</div></div>
+    <div class="stat"><div class="k">Equity</div><div class="v">${fmtUSD(m.equity)}</div></div>
+    <div class="stat"><div class="k">Depositor</div><div class="v">${m.depositors == null ? "-" : m.depositors}</div></div>
+    <div class="stat"><div class="k">Komisi leader</div><div class="v">${com}</div></div>
+    <div class="stat"><div class="k">Lockup</div><div class="v">${m.lockup_days == null ? "-" : m.lockup_days + " hari"}</div></div>
+    <div class="stat"><div class="k">Min deposit</div><div class="v">$${m.min_deposit == null ? "-" : m.min_deposit}</div></div>`;
+  renderMain();
+  $("depchart").innerHTML = lineChart([{pts: DEPT, color: "#fbbf24"}], "n");
+
+  const p = VD.portfolio || {};
+  $("port-ts").textContent = p.fetched_at_ms ? ("Diambil " + fmtDateTime(p.fetched_at_ms) + " WIB") : "";
+  const rows = [
+    ["Total value locked", fmtUSD(p.total_value_locked)],
+    ["Total deposit (sepanjang waktu)", fmtUSD(p.all_time_deposits)],
+    ["Total withdraw (sepanjang waktu)", fmtUSD(p.all_time_withdrawals)],
+    ["PnL (sepanjang waktu)", `<span class="${pctCls(p.all_time_pnl >= 0 ? 1 : -1)}">${fmtUSD(p.all_time_pnl)}</span>`],
+    ["Return 24 jam", `<span class="${pctCls(p.return_24h)}">${fmtPct(p.return_24h)}</span>`],
+    ["Return periode", `<span class="${pctCls(p.period_return)}">${fmtPct(p.period_return)}</span>`],
+    ["APR (resmi)", `<span class="${pctCls(p.apr)}">${fmtPct(p.apr)}</span>`],
+    ["Fee diterima leader", fmtUSD(p.fee_earned)],
+    ["Sharpe ratio", p.sharpe_ratio == null ? "-" : String(p.sharpe_ratio)],
+    ["Max drawdown", p.max_drawdown == null ? "-" : String(p.max_drawdown) + "%"],
+    ["Volume perdagangan", fmtUSD(p.volume)],
+    ["Catatan", "Rincian posisi per pasar tidak dibuka API publik"],
+  ];
+  $("port").innerHTML = rows.map(r => `<tr><th>${r[0]}</th><td class="num">${r[1]}</td></tr>`).join("");
+  $("upd").textContent = DATA.generated_at_wib || "-";
+  $("note").textContent = DATA.vault_detail_note || "";
+}
+
+let DATA = null;
+async function load() {
+  try {
+    const r = await fetch("data.json", {cache: "no-store"});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    DATA = await r.json();
+    const id = new URLSearchParams(location.search).get("id");
+    const detail = DATA.vault_detail || {};
+    if (!id || !detail[id]) {
+      const ids = Object.keys(detail);
+      if (!ids.length) throw new Error("vault_detail belum tersedia di data.json; tunggu siklus collector berikutnya.");
+      $("picker").style.display = "block";
+      $("vlist").innerHTML = ids.map(vid => {
+        const m = (detail[vid] || {}).meta || {};
+        return `<a href="vault.html?id=${encodeURIComponent(vid)}"><b>${m.name || vid}</b><br><span style="color:#9aa5b4;font-size:12px">share price ${m.share_price == null ? "-" : m.share_price.toFixed(6)} · ${m.risk_label || ""}</span></a>`;
+      }).join("");
+      return;
+    }
+    VD = detail[id]; META = VD.meta || {}; OH = VD.official_history || {};
+    OUR = VD.series || []; DEPT = VD.depositor_trend || [];
+    $("content").style.display = "block";
+    render();
+    document.querySelectorAll("#rangebar button[data-range]").forEach(b =>
+      b.addEventListener("click", () => {
+        document.querySelectorAll("#rangebar button[data-range]").forEach(x => x.classList.remove("on"));
+        b.classList.add("on"); curRange = b.dataset.range; renderMain();
+      }));
+    document.querySelectorAll("#rangebar button[data-metric]").forEach(b =>
+      b.addEventListener("click", () => {
+        document.querySelectorAll("#rangebar button[data-metric]").forEach(x => x.classList.remove("on"));
+        b.classList.add("on"); curMetric = b.dataset.metric; renderMain();
+      }));
+  } catch (err) {
+    const box = $("err");
+    box.style.display = "block";
+    box.textContent = "Gagal memuat data: " + err.message;
+  }
+}
+load();
+</script>
+</body>
+</html>

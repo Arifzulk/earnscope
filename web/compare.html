@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Papan Banding Earn - EarnScope</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
+  nav { margin-bottom:16px; font-size:14px; }
+  nav a { color:var(--blue); text-decoration:none; margin-right:16px; }
+  nav a:hover { text-decoration:underline; }
+  nav a.cur { color:var(--green); font-weight:700; }
+  h1 { margin:0 0 4px; font-size:26px; }
+  .sub { color:var(--mut); margin:0 0 20px; }
+  .prod { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:20px; margin-bottom:18px; }
+  .prod h2 { margin:0 0 4px; font-size:20px; }
+  .prod .tag { color:var(--mut); font-size:14px; margin-bottom:14px; }
+  .nums { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-bottom:14px; }
+  .num { background:#0e1116; border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .num .k { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:.05em; }
+  .num .v { font-size:17px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .num .n { font-size:11px; color:var(--mut); }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  .est { display:inline-block; font-size:10px; font-weight:800; color:#0e1116; background:var(--amber);
+         border-radius:4px; padding:2px 6px; margin-left:6px; vertical-align:middle; }
+  .meth { font-size:13.5px; color:var(--mut); border-top:1px solid var(--line); padding-top:12px; margin-top:4px; }
+  .meth b { color:var(--txt); }
+  .gaps { margin:10px 0 0; padding-left:20px; font-size:13px; color:var(--amber); }
+  .gaps li { margin:4px 0; }
+  table { width:100%; border-collapse:collapse; margin-bottom:14px; font-size:13.5px; }
+  .tblx { overflow-x:auto; }
+  .tblx table { min-width:680px; }
+  th, td { padding:9px 10px; text-align:left; border-bottom:1px solid var(--line); }
+  th { color:var(--mut); font-size:11px; text-transform:uppercase; letter-spacing:.05em; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .badge { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11.5px; font-weight:700; }
+  .badge.healthy { background:rgba(52,211,153,.15); color:var(--green); }
+  .badge.underwater { background:rgba(248,113,113,.15); color:var(--red); }
+  .btn { display:inline-block; margin-top:10px; padding:9px 16px; border-radius:8px;
+         background:var(--blue); color:#0e1116; font-weight:700; text-decoration:none; font-size:14px; }
+  .steps { margin:0 0 12px; padding-left:20px; color:var(--mut); font-size:14px; }
+  .steps li { margin:5px 0; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+  .upd { color:var(--amber); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="index.html">&larr; EarnScope</a>
+    <a href="vault.html">Detail Vault</a>
+    <a href="simulator.html">Simulator Deposit</a>
+    <a href="rewards.html">Rewards Projector</a>
+    <a href="tracker.html">Position Tracker</a>
+    <a href="borrow.html">Borrow to Earn</a>
+    <a href="compare.html" class="cur">Papan Banding</a>
+    <a href="onchain.html">STRIKE on-chain</a>
+  </nav>
+  <h1>Papan Banding Earn</h1>
+  <p class="sub">Satu layar untuk semua produk Earn Strike dengan angka terukur dari data asli. Yang tidak tersedia datanya ditulis apa adanya, tidak dikarang.</p>
+  <div id="err"></div>
+  <div id="prods"></div>
+  <footer>
+    <div>Terakhir diperbarui: <span class="upd" id="upd">n/a</span></div>
+    <div style="margin-top:8px">Sumber: API publik Strike (api.strikefinance.org) + Koios (api.koios.rest), tanpa auth &middot; Dibangun untuk Strike 48h Hackathon</div>
+  </footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const fmtUSD = n => n == null || !isFinite(n) ? "n/a" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtPct = n => n == null || !isFinite(n) ? "n/a" : (n >= 0 ? "+" : "") + Number(n).toFixed(2) + "%";
+const fmtNum = (n,d=2) => n == null || !isFinite(n) ? "n/a" : Number(n).toLocaleString("id-ID",{maximumFractionDigits:d});
+const pctCls = n => n == null || !isFinite(n) ? "" : (n >= 0 ? "pos" : "neg");
+
+function numCard(x){
+  let v;
+  if (x.value == null && x.status){ v = `<span style="color:#fbbf24">${x.status}</span>`; }
+  else if (x.unit === "USD"){ v = fmtUSD(x.value); }
+  else if (x.unit === "%"){ v = `<span class="${pctCls(x.value)}">${fmtPct(x.value)}</span>`; }
+  else if (typeof x.value === "number"){ v = fmtNum(x.value, 4) + (x.unit ? " "+x.unit : ""); }
+  else { v = (x.value ?? "n/a") + (x.unit ? " "+x.unit : ""); }
+  const est = /ESTIMASI/i.test(x.label) ? '<span class="est">ESTIMASI</span>' : "";
+  return `<div class="num"><div class="k">${x.label}${est}</div><div class="v">${v}</div>${x.note?`<div class="n">${x.note}</div>`:""}</div>`;
+}
+
+function vaultTable(vaults){
+  if(!vaults || !vaults.length) return "";
+  const rows = vaults.map(v=>`
+    <tr><td><b>${v.name||"n/a"}</b><br><span style="color:#9aa5b4;font-size:12px">${v.type==="protocol"?"Vault resmi Strike":"Vault pengguna"}</span></td>
+    <td><span class="badge ${v.risk_label==="Underwater"?"underwater":"healthy"}">${v.risk_label||"n/a"}</span></td>
+    <td class="num ${pctCls(v.perf_vs_1_pct)}">${fmtPct(v.perf_vs_1_pct)}</td>
+    <td class="num ${pctCls(v.perf_sejak_tracker_pct)}">${fmtPct(v.perf_sejak_tracker_pct)}</td>
+    <td class="num">${fmtUSD(v.equity)}</td>
+    <td class="num">${v.depositors ?? "n/a"}</td>
+    <td class="num">${v.leader_commission_bps==null?"n/a":(v.leader_commission_bps/100).toFixed(v.leader_commission_bps%100?2:0)+"%"}</td></tr>`).join("");
+  return `<div class="tblx"><table><thead><tr><th>Vault</th><th>Risiko</th><th style="text-align:right">vs 1.0</th><th style="text-align:right">Sejak tracker</th><th style="text-align:right">Equity</th><th style="text-align:right">Depositor</th><th style="text-align:right">Komisi</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function productCard(p){
+  let extra = "";
+  if (p.id === "vaults" && p.vaults) extra = vaultTable(p.vaults);
+  if (p.id === "borrow" && p.mechanism){
+    extra = `<ol class="steps">${p.mechanism.map(s=>`<li>${s}</li>`).join("")}</ol>` +
+      `<div style="font-size:13px;color:#9aa5b4;margin-bottom:12px">Threshold kesehatan line (asumsi EarnScope): ` +
+      (p.health_thresholds||[]).map(t=>`&ge;${t.min_ratio}x = <b style="color:#e8edf3">${t.status}</b>`).join(" &middot; ") + `</div>`;
+  }
+  if (p.season){
+    extra = `<div style="font-size:13.5px;color:#9aa5b4;margin-bottom:12px">Season 1 berakhir <b style="color:#e8edf3">${p.season.ends}</b> &middot; sisa <b style="color:#e8edf3">${fmtNum(p.season.remaining_days,1)} hari</b> &middot; pool <b style="color:#e8edf3">${fmtNum(p.season.pool_strike,0)} STRIKE</b></div>`;
+  }
+  const gaps = (p.data_gaps||[]).length
+    ? `<ul class="gaps">${p.data_gaps.map(g=>`<li>Data tidak tersedia: ${g}</li>`).join("")}</ul>` : "";
+  const btn = p.detail_page ? `<a class="btn" href="${p.detail_page}">Buka detail &rarr;</a>` : "";
+  return `<div class="prod"><h2>${p.name}${p.is_estimate?'<span class="est">ESTIMASI</span>':""}</h2>
+    <div class="tag">${p.tagline||""}</div>
+    <div class="nums">${(p.numbers||[]).map(numCard).join("")}</div>
+    ${extra}
+    <div class="meth"><b>Metodologi:</b> ${p.methodology||"n/a"}${gaps}</div>
+    ${btn}</div>`;
+}
+
+async function load(){
+  try{
+    const r = await fetch("data.json",{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d = await r.json();
+    $("upd").textContent = d.generated_at_wib || "n/a";
+    const prods = d.compare || [];
+    $("prods").innerHTML = prods.length ? prods.map(productCard).join("")
+      : "<div class='prod'>Data papan banding belum tersedia pada build ini.</div>";
+  }catch(err){
+    const box=$("err"); box.style.display="block";
+    box.textContent="Gagal memuat data.json: "+err.message;
+  }
+}
+load();
+</script>
+</body>
+</html>

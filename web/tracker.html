@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Position Tracker - EarnScope</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:24px 16px 48px; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  nav a { color:var(--txt); text-decoration:none; border:1px solid var(--line);
+           background:var(--card); padding:8px 14px; border-radius:999px; font-size:14px; }
+  nav a.active { border-color:var(--blue); color:var(--blue); }
+  header h1 { margin:0 0 4px; font-size:26px; }
+  header h1 .scope { color:var(--blue); }
+  header p { margin:0 0 16px; color:var(--mut); font-size:14px; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px;
+           padding:16px; margin-bottom:16px; }
+  .panel h2 { margin:0 0 12px; font-size:16px; }
+  .row { display:flex; gap:8px; }
+  input[type=text] { flex:1; padding:10px 12px; border-radius:8px; min-width:0;
+    border:1px solid var(--line); background:#0e1116; color:var(--txt); font-size:14px;
+    font-family:ui-monospace,Menlo,monospace; }
+  button.go { padding:10px 18px; border-radius:8px; border:none; cursor:pointer;
+    background:var(--blue); color:#0b1220; font-weight:700; font-size:14px; }
+  .hint { font-size:12px; color:var(--mut); margin-top:8px; }
+  .vcard { background:#0e1116; border:1px solid var(--line); border-radius:10px;
+           padding:14px 16px; margin-bottom:12px; }
+  .vcard h3 { margin:0 0 10px; font-size:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .stat .k { font-size:11px; color:var(--mut); text-transform:uppercase; letter-spacing:.05em; }
+  .stat .v { font-size:17px; font-weight:700; margin-top:2px; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  .est { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700;
+         background:rgba(251,191,36,.15); color:var(--amber); }
+  .lim { background:rgba(248,113,113,.07); border:1px solid #7f2d2d; color:#fca5a5;
+         border-radius:10px; padding:12px 16px; font-size:13px; margin-top:16px; }
+  .lim b { color:#fecaca; }
+  .meth { background:rgba(96,165,250,.08); border:1px solid #2b4a75; color:#bcd7fb;
+          border-radius:10px; padding:12px 16px; font-size:13px; margin-top:16px; }
+  .none { color:var(--mut); font-size:14px; padding:8px 0; }
+  .koios { font-size:14px; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="index.html">EarnScope</a>
+    <a href="vault.html">Detail Vault</a>
+    <a href="simulator.html">Simulator Deposit</a>
+    <a href="rewards.html">Rewards Projector</a>
+    <a href="tracker.html" class="active">Position Tracker</a>
+    <a href="borrow.html">Borrow to Earn</a>
+    <a href="compare.html">Papan Banding</a>
+    <a href="onchain.html">STRIKE on-chain</a>
+  </nav>
+  <header>
+    <h1>Position <span class="scope">Tracker</span></h1>
+    <p>Tempel alamat Cardano kamu untuk melihat posisimu di semua vault Strike. Tanpa login, tanpa kunci, murni dari data publik.</p>
+  </header>
+  <div id="err"></div>
+  <div class="panel">
+    <h2>Alamat Cardano</h2>
+    <div class="row">
+      <input type="text" id="addr" placeholder="addr1..." autocomplete="off" spellcheck="false">
+      <button class="go" id="go">Lacak</button>
+    </div>
+    <div class="hint">Alamat dinormalisasi otomatis (spasi dibuang, huruf kecil). Gunakan alamat pembayaran (addr1...), bukan alamat stake (stake1...).</div>
+  </div>
+  <div id="out"></div>
+  <div class="lim">
+    <b>Batasan apa adanya:</b> data posisi berasal dari snapshot depositors publik Strike
+    (diperbarui tiap jam oleh EarnScope). Line Borrow to Earn per akun dan status staking
+    resmi TIDAK bisa dilacak publik karena berada di balik autentikasi Strike. Saldo STRIKE
+    on-chain diambil langsung dari Koios dan bisa gagal dimuat bila jaringan Koios lambat.
+  </div>
+  <footer>Sumber: API publik Strike (api.strikefinance.org) + Koios (api.koios.rest) · Dibangun untuk Strike 48h Hackathon</footer>
+</div>
+<script>
+const STRIKE_POLICY = "f13ac4d66b3ee19a6aa0f2a22298737bd907cc95121662fc971b5275";
+const STRIKE_NAME_HEX = "535452494b45"; // "STRIKE"
+const fmtUSD = n => n == null || isNaN(n) ? "?" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtDate = ms => ms ? new Date(ms).toLocaleString("id-ID",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",year:"numeric"}) : "?";
+let DATA = null;
+
+function normAddr(s) { return (s || "").trim().toLowerCase(); }
+
+function render(addr) {
+  const out = document.getElementById("out");
+  const found = [];
+  Object.entries(DATA.tracker.vaults).forEach(([vid, v]) => {
+    const hit = (v.depositors || []).find(d => d.address === addr);
+    if (hit) found.push({ vid, v, d: hit });
+  });
+  if (!found.length) {
+    out.innerHTML = '<div class="panel"><div class="none">Alamat tidak ditemukan di data depositors publik vault mana pun. Pastikan alamatnya benar (format addr1...) dan vault-nya memang punya posisi deposit.</div></div>';
+    return;
+  }
+  let html = "";
+  found.forEach(({v, d}) => {
+    const pnlCls = d.pnl >= 0 ? "pos" : "neg";
+    html += `<div class="vcard"><h3>${v.name}</h3><div class="grid">
+      <div class="stat"><div class="k">Total deposit</div><div class="v">${fmtUSD(d.total_deposited)}</div></div>
+      <div class="stat"><div class="k">Total withdraw</div><div class="v">${fmtUSD(d.total_withdrawn)}</div></div>
+      <div class="stat"><div class="k">Ekuitas saat ini</div><div class="v">${fmtUSD(d.current_equity)}</div></div>
+      <div class="stat"><div class="k">PnL</div><div class="v ${pnlCls}">${fmtUSD(d.pnl)}</div></div>
+      <div class="stat"><div class="k">Share vault</div><div class="v">${d.share_pct.toFixed(4)}%</div></div>
+      <div class="stat"><div class="k">Depositor sejak</div><div class="v">${fmtDate(d.deposited_since_ms)}</div></div>
+    </div></div>`;
+  });
+  const slp = found.find(f => f.vid === DATA.rewards.slp_vault_id);
+  if (slp) {
+    const daysLeft = Math.max(0, (DATA.rewards.season_end_ms - Date.now()) / 86400000);
+    const total = DATA.rewards.slp_total_equity || 1;
+    const pts = DATA.rewards.points_per_day * daysLeft * slp.d.current_equity / total;
+    html += `<div class="vcard"><h3>Proyeksi rewards pribadimu (SLP) <span class="est">ESTIMASI</span></h3>
+      <div class="grid">
+        <div class="stat"><div class="k">Est. poin (sisa season)</div><div class="v">${pts.toFixed(2)}</div></div>
+        <div class="stat"><div class="k">Est. STRIKE</div><div class="v">${(pts*DATA.rewards.strike_per_point).toFixed(2)}</div></div>
+      </div>
+      <div class="hint">Dihitung pro-rata dari ekuitasmu saat ini terhadap total ekuitas SLP. Lihat catatan metodologi di halaman Rewards Projector.</div>
+    </div>`;
+  }
+  html += `<div class="vcard koios"><h3>Saldo STRIKE on-chain (via Koios)</h3><div id="koiosres">Memuat dari api.koios.rest ...</div></div>`;
+  out.innerHTML = html;
+  loadKoios(addr);
+}
+
+async function loadKoios(addr) {
+  const el = document.getElementById("koiosres");
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 45000);
+    const r = await fetch("https://api.koios.rest/api/v1/address_info", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ _addresses: [addr] }),
+      signal: ctrl.signal
+    });
+    clearTimeout(t);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const rows = await r.json();
+    const info = (rows && rows[0]) || {};
+    const assets = info.asset_list || [];
+    const strike = assets.find(a => a.policy_id === STRIKE_POLICY && a.asset_name === STRIKE_NAME_HEX);
+    const qty = strike ? Number(strike.quantity) : 0;
+    el.innerHTML = qty > 0
+      ? "Saldo STRIKE: <b>" + qty.toLocaleString("en-US") + "</b> unit (satuan terkecil; jumlah desimal token belum terverifikasi)."
+      : "Alamat ini tidak memegang token STRIKE (atau saldo 0).";
+  } catch(e) {
+    el.textContent = "Tidak bisa memuat saldo STRIKE saat ini (" + (e.name === "AbortError" ? "timeout" : e.message) + "). Coba lagi nanti, data posisi vault di atas tidak terpengaruh.";
+  }
+}
+
+async function init() {
+  try {
+    const d = await (await fetch("data.json",{cache:"no-store"})).json();
+    if (!d.tracker || !d.tracker.vaults) throw new Error("bagian tracker belum tersedia di data.json");
+    if (!d.rewards) throw new Error("bagian rewards belum tersedia di data.json");
+    DATA = d;
+  } catch(e) {
+    const el = document.getElementById("err");
+    el.style.display = "block";
+    el.textContent = "Gagal memuat data: " + e.message;
+    return;
+  }
+  const run = () => {
+    const a = normAddr(document.getElementById("addr").value);
+    if (!a) return;
+    render(a);
+  };
+  document.getElementById("go").onclick = run;
+  document.getElementById("addr").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STRIKE on-chain - EarnScope</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:24px 16px 48px; }
+  nav { margin-bottom:16px; font-size:14px; }
+  nav a { color:var(--blue); text-decoration:none; margin-right:16px; }
+  nav a:hover { text-decoration:underline; }
+  nav a.cur { color:var(--green); font-weight:700; }
+  h1 { margin:0 0 4px; font-size:26px; }
+  .sub { color:var(--mut); margin:0 0 20px; }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:18px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.06em; }
+  .stat .v { font-size:26px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:18px; }
+  .card h2 { margin:0 0 12px; font-size:17px; }
+  .conc { margin:10px 0; }
+  .conc .lbl { display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px; }
+  .conc .lbl b { font-variant-numeric:tabular-nums; }
+  .conc .bar { height:12px; background:#0e1116; border-radius:999px; overflow:hidden; }
+  .conc .bar > div { height:100%; border-radius:999px; background:var(--blue); }
+  .meth { font-size:13.5px; color:var(--mut); }
+  .meth b { color:var(--txt); }
+  .warn { background:#1a1408; border:1px solid #5b4a1e; color:#fcd34d; border-radius:12px;
+          padding:14px 16px; font-size:13.5px; margin-top:14px; }
+  .warn b { color:#fde68a; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  .cap { font-size:12px; color:var(--mut); margin-top:8px; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+  .upd { color:var(--amber); font-weight:600; }
+  svg.trend { width:100%; height:160px; display:block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="index.html">&larr; EarnScope</a>
+    <a href="vault.html">Detail Vault</a>
+    <a href="simulator.html">Simulator Deposit</a>
+    <a href="rewards.html">Rewards Projector</a>
+    <a href="tracker.html">Position Tracker</a>
+    <a href="borrow.html">Borrow to Earn</a>
+    <a href="compare.html">Papan Banding</a>
+    <a href="onchain.html" class="cur">STRIKE on-chain</a>
+  </nav>
+  <h1>STRIKE on-chain</h1>
+  <p class="sub">Data token STRIKE langsung dari blockchain Cardano via Koios. Angka staking resmi <b>tidak</b> ditampilkan di sini, lihat catatan metodologi di bawah.</p>
+  <div id="err"></div>
+
+  <div class="strip" id="strip"></div>
+
+  <div class="card">
+    <h2>Tren jumlah holder</h2>
+    <svg class="trend" id="trend" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+    <div class="cap" id="trendCap"></div>
+  </div>
+
+  <div class="card">
+    <h2>Konsentrasi top holder</h2>
+    <div id="conc"></div>
+    <div class="cap">Persentase kumulatif dari total supply: top 1 alamat, top 5 alamat, top 10 alamat.</div>
+  </div>
+
+  <div class="card">
+    <h2>Metodologi</h2>
+    <div class="meth" id="meth"></div>
+    <div class="warn">
+      <b>Catatan wajib soal staking.</b> Total staking resmi TIDAK bisa diturunkan dari data
+      on-chain: liquid staking Strike memakai registry opt-in yang disimpan di server Strike
+      (off-chain), bukan di smart contract yang bisa dibaca publik. Panel ini tidak menampilkan
+      angka "total staking" dalam bentuk apa pun dan tidak mengarangnya.
+    </div>
+  </div>
+
+  <footer>
+    <div>Snapshot terakhir: <span class="upd" id="upd">n/a</span> &middot; snapshot holder 1x per hari</div>
+    <div style="margin-top:8px">Sumber: Koios (api.koios.rest), tanpa key &middot; Policy STRIKE: f13ac4d6...b5275 &middot; Dibangun untuk Strike 48h Hackathon</div>
+  </footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const fmtInt = n => n == null ? "n/a" : Number(n).toLocaleString("id-ID");
+
+function trendSVG(hist){
+  const svg = $("trend");
+  if (!hist || hist.length < 2){
+    svg.innerHTML = `<text x="12" y="24" fill="#9aa5b4" font-size="13">Belum cukup data tren (butuh minimal 2 snapshot harian).</text>`;
+    return;
+  }
+  const W=600, H=160, P=14;
+  const vals = hist.map(p=>p[1]);
+  const min = Math.min(...vals), max = Math.max(...vals), rng = (max-min)||1;
+  const X = i => P + i/(hist.length-1)*(W-2*P);
+  const Y = v => H-P - (v-min)/rng*(H-2*P);
+  const pts = hist.map((p,i)=>`${X(i).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ");
+  const up = vals[vals.length-1] >= vals[0];
+  const c = up ? "#34d399" : "#f87171";
+  svg.innerHTML =
+    `<line x1="0" y1="${H-P}" x2="${W}" y2="${H-P}" stroke="#242c38"/>`+
+    `<polygon points="${P},${H-P} ${pts} ${X(hist.length-1).toFixed(1)},${H-P}" fill="${c}22"/>`+
+    `<polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2"/>`+
+    `<text x="${P+2}" y="16" fill="#9aa5b4" font-size="11">${fmtInt(max)}</text>`+
+    `<text x="${P+2}" y="${H-P-4}" fill="#9aa5b4" font-size="11">${fmtInt(min)}</text>`;
+}
+
+async function load(){
+  try{
+    const r = await fetch("data.json",{cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const d = await r.json();
+    const o = d.onchain || {};
+    $("upd").textContent = o.ts_wib || "n/a";
+    $("strip").innerHTML = `
+      <div class="stat"><div class="k">Jumlah holder</div><div class="v">${fmtInt(o.holder_count)}</div></div>
+      <div class="stat"><div class="k">Supply</div><div class="v">${fmtInt(o.supply_strike)} <span style="font-size:14px;color:#9aa5b4">STRIKE</span></div></div>
+      <div class="stat"><div class="k">Snapshot harian</div><div class="v">${o.snapshot_count ?? "n/a"}</div></div>`;
+    trendSVG(o.history || []);
+    const h = o.history || [];
+    $("trendCap").textContent = h.length
+      ? "Dari "+h.length+" snapshot harian ("+new Date(h[0][0]).toLocaleDateString("id-ID",{timeZone:"Asia/Jakarta"})+" s/d "+new Date(h[h.length-1][0]).toLocaleDateString("id-ID",{timeZone:"Asia/Jakarta"})+")."
+      : "";
+    const conc = [
+      ["Top 1 holder", o.top1_pct, "#f87171"],
+      ["Top 5 holder", o.top5_pct, "#fbbf24"],
+      ["Top 10 holder", o.top10_pct, "#60a5fa"],
+    ];
+    $("conc").innerHTML = conc.map(([lbl,v,c])=>`
+      <div class="conc"><div class="lbl"><span>${lbl}</span><b>${v==null?"n/a":Number(v).toFixed(2)+"%"}</b></div>
+      <div class="bar"><div style="width:${v==null?0:Math.min(100,v).toFixed(2)}%;background:${c}"></div></div></div>`).join("");
+    $("meth").innerHTML = "<b>Sumber:</b> "+(o.source || "Koios (api.koios.rest)")+". "+(o.methodology || "");
+  }catch(err){
+    const box=$("err"); box.style.display="block";
+    box.textContent="Gagal memuat data.json: "+err.message;
+  }
+}
+load();
+</script>
+</body>
+</html>

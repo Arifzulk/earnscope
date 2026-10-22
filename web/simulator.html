@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator Deposit - EarnScope</title>
+<style>
+  :root { --bg:#0e1116; --card:#171c24; --line:#242c38; --txt:#e8edf3; --mut:#9aa5b4;
+          --green:#34d399; --red:#f87171; --amber:#fbbf24; --blue:#60a5fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:24px 16px 48px; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+  nav a { color:var(--txt); text-decoration:none; border:1px solid var(--line);
+           background:var(--card); padding:8px 14px; border-radius:999px; font-size:14px; }
+  nav a.active { border-color:var(--blue); color:var(--blue); }
+  header h1 { margin:0 0 4px; font-size:26px; }
+  header h1 .scope { color:var(--blue); }
+  header p { margin:0 0 16px; color:var(--mut); font-size:14px; }
+  #err { background:#3a1d1d; border:1px solid #7f2d2d; color:#fca5a5;
+         padding:12px 16px; border-radius:10px; margin-bottom:16px; display:none; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px;
+           padding:16px; margin-bottom:16px; }
+  .panel h2 { margin:0 0 12px; font-size:16px; }
+  label { display:block; font-size:13px; color:var(--mut); margin:10px 0 6px; }
+  select, input[type=number] { width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--line); background:#0e1116; color:var(--txt); font-size:15px; }
+  .dur { display:flex; gap:8px; flex-wrap:wrap; }
+  .dur button { padding:9px 14px; border-radius:999px; border:1px solid var(--line);
+    background:#0e1116; color:var(--txt); font-size:14px; cursor:pointer; }
+  .dur button.active { border-color:var(--blue); color:var(--blue); font-weight:700; }
+  .rangeinfo { font-size:13px; color:var(--mut); margin-top:8px; }
+  .res { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+         gap:12px; margin-top:4px; }
+  .stat { background:#0e1116; border:1px solid var(--line); border-radius:10px;
+          padding:12px 14px; }
+  .stat .k { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.05em; }
+  .stat .v { font-size:22px; font-weight:700; margin-top:4px; }
+  .pos { color:var(--green); } .neg { color:var(--red); }
+  canvas { width:100%; height:260px; display:block; }
+  .disc { background:rgba(251,191,36,.08); border:1px solid #7a5c14; color:#fcd34d;
+          border-radius:10px; padding:12px 16px; font-size:13px; margin-top:16px; }
+  footer { margin-top:24px; color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a href="index.html">EarnScope</a>
+    <a href="vault.html">Detail Vault</a>
+    <a href="simulator.html" class="active">Simulator Deposit</a>
+    <a href="rewards.html">Rewards Projector</a>
+    <a href="tracker.html">Position Tracker</a>
+    <a href="borrow.html">Borrow to Earn</a>
+    <a href="compare.html">Papan Banding</a>
+    <a href="onchain.html">STRIKE on-chain</a>
+  </nav>
+  <header>
+    <h1>Simulator <span class="scope">Deposit</span></h1>
+    <p>Bagaimana jadinya jika kamu deposit ke sebuah vault pada suatu titik dalam data kami? Dihitung dari share price historis asli.</p>
+  </header>
+  <div id="err"></div>
+  <div class="panel">
+    <h2>Input simulasi</h2>
+    <label for="vault">Vault</label>
+    <select id="vault"></select>
+    <label for="nominal">Nominal deposit (USD)</label>
+    <input type="number" id="nominal" value="1000" min="1" step="any">
+    <label>Jangka waktu (mundur dari data terbaru)</label>
+    <div class="dur" id="dur"></div>
+    <div class="rangeinfo" id="rangeinfo"></div>
+  </div>
+  <div class="panel">
+    <h2>Hasil simulasi historis</h2>
+    <div class="res" id="res"></div>
+  </div>
+  <div class="panel">
+    <h2>Pertumbuhan nilai deposit</h2>
+    <canvas id="chart" width="860" height="260"></canvas>
+  </div>
+  <div class="disc">
+    <b>Disclaimer:</b> hasil di atas murni rekonstruksi dari data share price masa lalu
+    dan BUKAN janji hasil di masa depan. Komisi leader dipotong dari profit sesuai
+    besaran resmi vault (hanya bila ada profit). Kinerja masa lalu tidak menjamin kinerja berikutnya.
+  </div>
+  <footer>Sumber: API publik Strike (api.strikefinance.org), tanpa auth · Dibangun untuk Strike 48h Hackathon</footer>
+</div>
+<script>
+const fmtUSD = n => n == null || isNaN(n) ? "?" : "$" + Number(n).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtPct = n => n == null || isNaN(n) ? "?" : (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+const fmtWIB = ms => new Date(ms).toLocaleString("id-ID",{timeZone:"Asia/Jakarta",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+let SIM = null;
+
+function compute(vid, nominal, durHours) {
+  const v = SIM.vaults[vid];
+  const s = v.series;
+  const endTs = s[s.length-1][0];
+  const cut = endTs - durHours*3600e3;
+  let i0 = 0;
+  for (let i = 0; i < s.length; i++) { if (s[i][0] >= cut) { i0 = i; break; } }
+  const sp0 = s[i0][1], sp1 = s[s.length-1][1];
+  const gross = nominal * (sp1/sp0 - 1);
+  const bps = v.commission_bps || 0;
+  const comm = Math.max(0, gross) * bps / 10000;
+  const net = nominal + gross - comm;
+  const growth = s.slice(i0).map(p => [p[0], nominal * p[1]/sp0]);
+  return { v, i0, sp0, sp1, gross, comm, net, bps,
+           ret: (net-nominal)/nominal*100, growth };
+}
+
+function draw(g, nominal) {
+  const cv = document.getElementById("chart");
+  const ctx = cv.getContext("2d");
+  const W = cv.width, H = cv.height, P = 44;
+  ctx.clearRect(0,0,W,H);
+  const ys = g.growth.map(p=>p[1]);
+  let mn = Math.min(...ys), mx = Math.max(...ys);
+  if (mx === mn) { mx = mn*1.01 || 1; mn = mn*0.99; }
+  const X = i => P + i/(g.growth.length-1)*(W-2*P);
+  const Y = v => H-P - (v-mn)/(mx-mn)*(H-2*P);
+  ctx.strokeStyle = "#242c38"; ctx.fillStyle = "#9aa5b4"; ctx.font = "11px sans-serif";
+  ctx.lineWidth = 1;
+  [mn, (mn+mx)/2, mx].forEach(v => {
+    ctx.beginPath(); ctx.moveTo(P, Y(v)); ctx.lineTo(W-P, Y(v)); ctx.stroke();
+    ctx.fillText(fmtUSD(v), 2, Y(v)+4);
+  });
+  const n = g.growth.length;
+  [0, Math.floor(n/2), n-1].forEach(i => {
+    ctx.fillText(fmtWIB(g.growth[i][0]), X(i)-24, H-8);
+  });
+  ctx.strokeStyle = g.net >= nominal ? "#34d399" : "#f87171";
+  ctx.lineWidth = 2; ctx.beginPath();
+  g.growth.forEach((p,i) => { i ? ctx.lineTo(X(i),Y(p[1])) : ctx.moveTo(X(0),Y(p[1])); });
+  ctx.stroke();
+}
+
+function render() {
+  const vid = document.getElementById("vault").value;
+  const nominal = Math.max(1, document.getElementById("nominal").valueAsNumber || 1000);
+  const dur = parseFloat(document.querySelector(".dur button.active").dataset.h);
+  const g = compute(vid, nominal, dur);
+  const cls = g.net >= nominal ? "pos" : "neg";
+  document.getElementById("res").innerHTML = `
+    <div class="stat"><div class="k">Nilai akhir</div><div class="v ${cls}">${fmtUSD(g.net)}</div></div>
+    <div class="stat"><div class="k">Return bersih</div><div class="v ${cls}">${fmtPct(g.ret)}</div></div>
+    <div class="stat"><div class="k">Profit kotor</div><div class="v ${g.gross>=0?"pos":"neg"}">${fmtUSD(g.gross)}</div></div>
+    <div class="stat"><div class="k">Komisi leader (${(g.bps/100).toFixed(g.bps%100?2:0)}%)</div><div class="v">${fmtUSD(g.comm)}</div></div>
+    <div class="stat"><div class="k">Share price awal</div><div class="v">${g.sp0.toFixed(6)}</div></div>
+    <div class="stat"><div class="k">Share price akhir</div><div class="v">${g.sp1.toFixed(6)}</div></div>`;
+  document.getElementById("rangeinfo").textContent =
+    "Rentang data: " + fmtWIB(g.v.series[0][0]) + " s/d " + fmtWIB(g.v.series[g.v.series.length-1][0]) +
+    " (" + g.v.point_count + " titik). Simulasi mulai " + fmtWIB(g.v.series[g.i0][0]) + ".";
+  draw(g, nominal);
+}
+
+async function init() {
+  try {
+    const d = await (await fetch("data.json",{cache:"no-store"})).json();
+    if (!d.simulator || !d.simulator.vaults || !Object.keys(d.simulator.vaults).length)
+      throw new Error("bagian simulator belum tersedia di data.json");
+    SIM = d.simulator;
+  } catch(e) {
+    const el = document.getElementById("err");
+    el.style.display = "block";
+    el.textContent = "Gagal memuat data: " + e.message;
+    return;
+  }
+  const sel = document.getElementById("vault");
+  Object.entries(SIM.vaults).forEach(([id,v]) => {
+    const o = document.createElement("option"); o.value = id; o.textContent = v.name; sel.appendChild(o);
+  });
+  const spanH = (SIM.vaults[sel.value].max_ts - SIM.vaults[sel.value].min_ts) / 3600e3;
+  const opts = [1,6,12,24].filter(h => h < spanH).concat([Math.floor(spanH)]);
+  const dur = document.getElementById("dur");
+  dur.innerHTML = "";
+  opts.forEach((h,i) => {
+    const b = document.createElement("button");
+    b.textContent = h >= spanH ? "Semua data (" + h + " jam)" : h + " jam";
+    b.dataset.h = h;
+    if (i === opts.length-1) b.classList.add("active");
+    b.onclick = () => { dur.querySelectorAll("button").forEach(x=>x.classList.remove("active")); b.classList.add("active"); render(); };
+    dur.appendChild(b);
+  });
+  sel.onchange = render;
+  document.getElementById("nominal").oninput = render;
+  render();
+}
+init();
+</script>
+</body>
+</html>
